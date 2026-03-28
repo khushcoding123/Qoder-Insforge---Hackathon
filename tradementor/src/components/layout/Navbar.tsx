@@ -3,8 +3,9 @@
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { TrendingUp, Menu, X, ChevronDown, LogOut, User } from "lucide-react";
+import { Menu, X, ChevronDown, LogOut, User } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { BrandLockup } from "@/components/brand/Brand";
 import { cn } from "@/lib/cn";
 import { insforge } from "@/lib/insforge";
 import { signOut } from "@/lib/actions/auth";
@@ -93,13 +94,11 @@ export function Navbar() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="group flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-purple-500 shadow-[0_0_18px_rgba(0,229,255,0.22)] transition-all duration-300 group-hover:shadow-[0_0_24px_rgba(0,229,255,0.32)]">
-              <TrendingUp className="h-4.5 w-4.5 text-white" />
-            </div>
-            <span className="text-lg font-semibold tracking-tight text-white">
-              Lumen
-            </span>
+          <Link href="/" className="group">
+            <BrandLockup
+              className="transition-transform duration-300 group-hover:scale-[1.02]"
+              markClassName="h-9 w-9 rounded-xl shadow-[0_0_20px_rgba(34,211,238,0.16)]"
+            />
           </Link>
 
           {/* Desktop Nav — hidden on auth routes */}

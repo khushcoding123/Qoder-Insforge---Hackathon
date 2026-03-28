@@ -206,50 +206,11 @@ export default function PracticePage() {
 
   const loadReplay = useCallback(
     async (explicitReplay?: ReplayDataset | null) => {
-      // #region agent log
-      fetch("http://127.0.0.1:7883/ingest/6e535b12-e880-4e68-8fef-78d19b71341d", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "efaa0c" },
-        body: JSON.stringify({
-          sessionId: "efaa0c",
-          runId: "initial-debug",
-          hypothesisId: "H2",
-          location: "src/app/practice/page.tsx:loadReplay:start",
-          message: "loadReplay invoked",
-          data: {
-            explicitReplayId: explicitReplay?.id ?? null,
-            currentDatasetId: dataset?.id ?? null,
-            isStreaming,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
       if (isStreaming) return;
 
       setIsLoadingReplay(true);
       const replay = explicitReplay ?? getRandomReplayChoice(dataset?.id);
       await new Promise((resolve) => setTimeout(resolve, 120));
-      // #region agent log
-      fetch("http://127.0.0.1:7883/ingest/6e535b12-e880-4e68-8fef-78d19b71341d", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "efaa0c" },
-        body: JSON.stringify({
-          sessionId: "efaa0c",
-          runId: "initial-debug",
-          hypothesisId: "H3",
-          location: "src/app/practice/page.tsx:loadReplay:chosen",
-          message: "loadReplay selected replay",
-          data: {
-            explicitReplayProvided: Boolean(explicitReplay),
-            chosenReplayId: replay.id,
-            previousDatasetId: dataset?.id ?? null,
-            sameAsPrevious: replay.id === dataset?.id,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
       setDataset(replay);
       setSelectedReplayId(replay.id);
       setChartKey((prev) => prev + 1);
@@ -267,51 +228,6 @@ export default function PracticePage() {
     initialReplayLoadedRef.current = true;
     void loadReplay();
   }, [loadReplay]);
-
-  useEffect(() => {
-    // #region agent log
-    fetch("http://127.0.0.1:7883/ingest/6e535b12-e880-4e68-8fef-78d19b71341d", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "efaa0c" },
-      body: JSON.stringify({
-        sessionId: "efaa0c",
-        runId: "initial-debug",
-        hypothesisId: "H5",
-        location: "src/app/practice/page.tsx:mount",
-        message: "Practice page mounted with client description/version",
-        data: {
-          pageDescription:
-            "Work through historical ES futures replays with only the visible bars on screen. Lock a trade plan first, then reveal what the market actually did and review both your process and the outcome.",
-          replayCatalogIds: REPLAY_CATALOG.map((item) => item.id),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-  }, []);
-
-  useEffect(() => {
-    // #region agent log
-    fetch("http://127.0.0.1:7883/ingest/6e535b12-e880-4e68-8fef-78d19b71341d", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "efaa0c" },
-      body: JSON.stringify({
-        sessionId: "efaa0c",
-        runId: "initial-debug",
-        hypothesisId: "H4",
-        location: "src/app/practice/page.tsx:selector-state",
-        message: "Replay selector state changed",
-        data: {
-          datasetId: dataset?.id ?? null,
-          selectedReplayId,
-          isLoadingReplay,
-          isStreaming,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-  }, [dataset?.id, selectedReplayId, isLoadingReplay, isStreaming]);
 
   const handleDraftChange = <K extends keyof TradePlanDraft>(field: K, value: TradePlanDraft[K]) => {
     setTradePlanDraft((prev) => ({ ...prev, [field]: value }));
@@ -344,27 +260,6 @@ export default function PracticePage() {
   };
 
   const handleLoadSelectedReplay = () => {
-    // #region agent log
-    fetch("http://127.0.0.1:7883/ingest/6e535b12-e880-4e68-8fef-78d19b71341d", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "efaa0c" },
-      body: JSON.stringify({
-        sessionId: "efaa0c",
-        runId: "post-fix",
-        hypothesisId: "H2",
-        location: "src/app/practice/page.tsx:handleLoadSelectedReplay",
-        message: "New Replay button pressed",
-        data: {
-          selectedReplayId,
-          currentDatasetId: dataset?.id ?? null,
-          mode: "random-excluding-current",
-          isLoadingReplay,
-          isStreaming,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     void loadReplay();
   };
 
@@ -462,28 +357,6 @@ export default function PracticePage() {
                         onChange={(e) => {
                           const nextReplayId = e.target.value;
                           const selectedReplay = getReplayChoiceById(nextReplayId);
-                          // #region agent log
-                          fetch("http://127.0.0.1:7883/ingest/6e535b12-e880-4e68-8fef-78d19b71341d", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "efaa0c" },
-                            body: JSON.stringify({
-                              sessionId: "efaa0c",
-                              runId: "post-fix",
-                              hypothesisId: "H1",
-                              location: "src/app/practice/page.tsx:select:onChange",
-                              message: "Replay dropdown changed",
-                              data: {
-                                nextReplayId,
-                                resolvedReplayId: selectedReplay?.id ?? null,
-                                currentSelectedReplayId: selectedReplayId,
-                                currentDatasetId: dataset?.id ?? null,
-                                isLoadingReplay,
-                                isStreaming,
-                              },
-                              timestamp: Date.now(),
-                            }),
-                          }).catch(() => {});
-                          // #endregion
                           setSelectedReplayId(nextReplayId);
                           if (selectedReplay) {
                             void loadReplay(selectedReplay);
