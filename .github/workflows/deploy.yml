@@ -1,0 +1,53 @@
+name: Deploy to InsForge
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: tradementor/package-lock.json
+
+      - name: Install dependencies
+        working-directory: tradementor
+        run: npm ci
+
+      - name: Build
+        working-directory: tradementor
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          NEXT_PUBLIC_INSFORGE_URL: ${{ secrets.NEXT_PUBLIC_INSFORGE_URL }}
+          NEXT_PUBLIC_INSFORGE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_INSFORGE_ANON_KEY }}
+        run: npm run build
+
+      - name: Login to InsForge
+        env:
+          INSFORGE_EMAIL: ${{ secrets.INSFORGE_EMAIL }}
+          INSFORGE_PASSWORD: ${{ secrets.INSFORGE_PASSWORD }}
+        run: npx @insforge/cli login --email -y
+
+      - name: Link InsForge project
+        run: npx @insforge/cli link --project-id 18ad60b3-179d-4e4d-b602-9dbf14a5d586 --org-id 98894c33-ac1f-486c-987c-051254f23894 -y
+
+      - name: Deploy
+        working-directory: tradementor
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          NEXT_PUBLIC_INSFORGE_URL: ${{ secrets.NEXT_PUBLIC_INSFORGE_URL }}
+          NEXT_PUBLIC_INSFORGE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_INSFORGE_ANON_KEY }}
+        run: |
+          npx @insforge/cli deployments deploy . \
+            --env "{\"ANTHROPIC_API_KEY\":\"$ANTHROPIC_API_KEY\",\"NEXT_PUBLIC_INSFORGE_URL\":\"$NEXT_PUBLIC_INSFORGE_URL\",\"NEXT_PUBLIC_INSFORGE_ANON_KEY\":\"$NEXT_PUBLIC_INSFORGE_ANON_KEY\"}" \
+            -y
