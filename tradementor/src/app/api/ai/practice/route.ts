@@ -5,7 +5,14 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { message, mode, strategyChecklist, conversationHistory } = body;
+    const {
+      message,
+      mode,
+      strategyChecklist,
+      conversationHistory,
+      scenarioContext,
+      isScenarioInit,
+    } = body;
 
     if (!message || typeof message !== "string") {
       return new Response(JSON.stringify({ error: "Message is required" }), {
@@ -17,20 +24,14 @@ export async function POST(request: Request) {
     if (!mode || !["socratic", "guided"].includes(mode)) {
       return new Response(
         JSON.stringify({ error: "Mode must be 'socratic' or 'guided'" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
+        { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return new Response(
         JSON.stringify({ error: "ANTHROPIC_API_KEY is not configured" }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" },
-        }
+        { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
 
@@ -38,7 +39,9 @@ export async function POST(request: Request) {
       message,
       mode as "socratic" | "guided",
       strategyChecklist,
-      conversationHistory
+      conversationHistory,
+      typeof scenarioContext === "string" ? scenarioContext : undefined,
+      isScenarioInit === true
     );
 
     const readableStream = new ReadableStream({
@@ -72,10 +75,7 @@ export async function POST(request: Request) {
     console.error("Practice API error:", error);
     return new Response(
       JSON.stringify({ error: "Failed to process request" }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 }

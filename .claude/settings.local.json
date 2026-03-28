@@ -45,7 +45,10 @@
       "Bash(cmd /c \"netstat -ano | findstr :3000 > C:\\\\Users\\\\khush\\\\AppData\\\\Local\\\\Temp\\\\ports.txt 2>&1\")",
       "Read(//c/Users/khush/AppData/Local/Temp/**)",
       "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | Select-Object LocalPort,OwningProcess\")",
-      "Bash(powershell -Command \"Stop-Process -Id 42584 -Force; Start-Sleep -Seconds 1; Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | Select-Object LocalPort,OwningProcess\")"
+      "Bash(powershell -Command \"Stop-Process -Id 42584 -Force; Start-Sleep -Seconds 1; Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | Select-Object LocalPort,OwningProcess\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://7kwxa5rq.us-east.insforge.app\")",
+      "Bash(curl:*)",
+      "Bash(node:*)"
     ]
   }
 }
