@@ -4,7 +4,7 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-const LESSON_SYSTEM_PROMPT = `You are a trading education AI coach for TradeMentor, an educational platform that teaches traders how to think and develop their own edge.
+const LESSON_SYSTEM_PROMPT = `You are a trading education AI coach for Lumen, an educational platform that teaches traders how to think and develop their own edge.
 
 Your role:
 - Help users understand trading concepts deeply, not just superficially

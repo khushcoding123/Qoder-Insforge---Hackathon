@@ -165,137 +165,139 @@ export default function OnboardingPage() {
 
   return (
     <div className="auth-shell grid-bg">
-      <Link href="/" className="site-logo-lockup absolute left-1/2 top-10 -translate-x-1/2">
-        <div className="site-logo-mark">
-          <TrendingUp className="h-5 w-5 text-white" />
-        </div>
-        <span className="text-xl font-bold tracking-tight text-white">
-          TradeMentor <span className="text-cyan-400">AI</span>
-        </span>
-      </Link>
-
-      <div className="w-full max-w-xl pt-20">
-        <div className="mb-6 text-center">
-          <p className="page-kicker mx-auto">Personalized setup</p>
-          <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white">
-            Let&apos;s tailor your learning path
-          </h1>
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-zinc-400">
-            This takes about a minute and helps shape your lessons, practice prompts, and coaching style around where you are right now.
-          </p>
-        </div>
-
-        <div className="mb-8 flex items-center gap-2">
-          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
-            <div
-              key={i}
-              className={`h-1 rounded-full flex-1 transition-all duration-500 ${
-                i + 1 <= step ? "bg-gradient-to-r from-cyan-400 to-purple-500" : "bg-white/10"
-              }`}
-            />
-          ))}
-        </div>
-        <p className="mb-6 text-center text-xs tracking-[0.16em] text-zinc-500 uppercase">Step {step} of {TOTAL_STEPS}</p>
-
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={step}
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -30 }}
-            transition={{ duration: 0.25 }}
-          >
-            <div className="premium-panel p-8">
-              <h1 className="text-2xl font-bold text-white mb-1">{stepTitles[step - 1]}</h1>
-              <p className="text-gray-400 text-sm mb-6">{stepSubtitles[step - 1]}</p>
-
-              <div className="space-y-3">
-                {step === 1 && EXPERIENCE_OPTIONS.map((opt) => (
-                  <SelectCard
-                    key={opt.value}
-                    option={opt}
-                    selected={experience === opt.value}
-                    onClick={() => setExperience(opt.value)}
-                  />
-                ))}
-
-                {step === 2 && FAMILIARITY_OPTIONS.map((opt) => (
-                  <SelectCard
-                    key={opt.value}
-                    option={opt}
-                    selected={familiarity.includes(opt.value)}
-                    onClick={() => toggleMulti(familiarity, setFamiliarity, opt.value)}
-                  />
-                ))}
-
-                {step === 3 && MARKET_OPTIONS.map((opt) => (
-                  <SelectCard
-                    key={opt.value}
-                    option={opt}
-                    selected={markets.includes(opt.value)}
-                    onClick={() => toggleMulti(markets, setMarkets, opt.value)}
-                  />
-                ))}
-
-                {step === 4 && GOAL_OPTIONS.map((opt) => (
-                  <SelectCard
-                    key={opt.value}
-                    option={opt}
-                    selected={goal === opt.value}
-                    onClick={() => setGoal(opt.value)}
-                  />
-                ))}
-
-                {step === 5 && TIME_OPTIONS.map((opt) => (
-                  <SelectCard
-                    key={opt.value}
-                    option={opt}
-                    selected={timeCommitment === opt.value}
-                    onClick={() => setTimeCommitment(opt.value)}
-                  />
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Save error */}
-        {saveError && (
-          <div className="mt-4 flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-400">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            {saveError}
+      <div className="auth-shell-frame max-w-xl">
+        <Link href="/" className="site-logo-lockup auth-shell-brand">
+          <div className="site-logo-mark">
+            <TrendingUp className="h-5 w-5 text-white" />
           </div>
-        )}
+          <span className="text-xl font-bold tracking-tight text-white">
+            Lumen
+          </span>
+        </Link>
 
-        {/* Navigation */}
-        <div className="flex gap-3 mt-6">
-          {step > 1 && (
-            <button
-              onClick={() => setStep((s) => (s - 1) as Step)}
-              className="flex items-center gap-2 px-5 py-3 bg-white/5 border border-white/10 rounded-xl text-gray-300 hover:text-white hover:bg-white/10 transition-all text-sm font-medium"
-            >
-              <ChevronLeft className="w-4 h-4" /> Back
-            </button>
-          )}
+        <div className="auth-shell-main">
+          <div className="w-full">
+            <div className="mb-6 text-center">
+              <p className="page-kicker mx-auto">Personalized setup</p>
+              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white">
+                Let&apos;s tailor your learning path
+              </h1>
+              <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-zinc-400">
+                This takes about a minute and helps shape your lessons, practice prompts, and coaching style around where you are right now.
+              </p>
+            </div>
 
-          {step < TOTAL_STEPS ? (
-            <button
-              onClick={() => setStep((s) => (s + 1) as Step)}
-              disabled={!canAdvance()}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-cyan-400 to-purple-500 text-white rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-40 text-sm shadow-[0_0_20px_rgba(0,229,255,0.2)]"
-            >
-              Continue <ChevronRight className="w-4 h-4" />
-            </button>
-          ) : (
-            <button
-              onClick={handleFinish}
-              disabled={!canAdvance() || saving}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-cyan-400 to-purple-500 text-white rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-40 text-sm shadow-[0_0_20px_rgba(0,229,255,0.2)]"
-            >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-              {saving ? "Personalizing..." : "Start Learning →"}
-            </button>
-          )}
+            <div className="mb-8 flex items-center gap-2">
+              {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-1 rounded-full flex-1 transition-all duration-500 ${
+                    i + 1 <= step ? "bg-gradient-to-r from-cyan-400 to-purple-500" : "bg-white/10"
+                  }`}
+                />
+              ))}
+            </div>
+            <p className="mb-6 text-center text-xs tracking-[0.16em] text-zinc-500 uppercase">Step {step} of {TOTAL_STEPS}</p>
+
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={step}
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -30 }}
+                transition={{ duration: 0.25 }}
+              >
+                <div className="premium-panel p-8">
+                  <h1 className="mb-1 text-2xl font-bold text-white">{stepTitles[step - 1]}</h1>
+                  <p className="mb-6 text-sm text-gray-400">{stepSubtitles[step - 1]}</p>
+
+                  <div className="space-y-3">
+                    {step === 1 && EXPERIENCE_OPTIONS.map((opt) => (
+                      <SelectCard
+                        key={opt.value}
+                        option={opt}
+                        selected={experience === opt.value}
+                        onClick={() => setExperience(opt.value)}
+                      />
+                    ))}
+
+                    {step === 2 && FAMILIARITY_OPTIONS.map((opt) => (
+                      <SelectCard
+                        key={opt.value}
+                        option={opt}
+                        selected={familiarity.includes(opt.value)}
+                        onClick={() => toggleMulti(familiarity, setFamiliarity, opt.value)}
+                      />
+                    ))}
+
+                    {step === 3 && MARKET_OPTIONS.map((opt) => (
+                      <SelectCard
+                        key={opt.value}
+                        option={opt}
+                        selected={markets.includes(opt.value)}
+                        onClick={() => toggleMulti(markets, setMarkets, opt.value)}
+                      />
+                    ))}
+
+                    {step === 4 && GOAL_OPTIONS.map((opt) => (
+                      <SelectCard
+                        key={opt.value}
+                        option={opt}
+                        selected={goal === opt.value}
+                        onClick={() => setGoal(opt.value)}
+                      />
+                    ))}
+
+                    {step === 5 && TIME_OPTIONS.map((opt) => (
+                      <SelectCard
+                        key={opt.value}
+                        option={opt}
+                        selected={timeCommitment === opt.value}
+                        onClick={() => setTimeCommitment(opt.value)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+
+            {saveError && (
+              <div className="mt-4 flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-400">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                {saveError}
+              </div>
+            )}
+
+            <div className="mt-6 flex gap-3">
+              {step > 1 && (
+                <button
+                  onClick={() => setStep((s) => (s - 1) as Step)}
+                  className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-medium text-gray-300 transition-all hover:bg-white/10 hover:text-white"
+                >
+                  <ChevronLeft className="h-4 w-4" /> Back
+                </button>
+              )}
+
+              {step < TOTAL_STEPS ? (
+                <button
+                  onClick={() => setStep((s) => (s + 1) as Step)}
+                  disabled={!canAdvance()}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-purple-500 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40 shadow-[0_0_20px_rgba(0,229,255,0.2)]"
+                >
+                  Continue <ChevronRight className="h-4 w-4" />
+                </button>
+              ) : (
+                <button
+                  onClick={handleFinish}
+                  disabled={!canAdvance() || saving}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-purple-500 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40 shadow-[0_0_20px_rgba(0,229,255,0.2)]"
+                >
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {saving ? "Personalizing..." : "Start Learning →"}
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

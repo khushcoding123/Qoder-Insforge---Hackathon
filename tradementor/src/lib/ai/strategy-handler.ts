@@ -4,7 +4,7 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-const STRATEGY_SYSTEM_PROMPT = `You are a trading strategy development coach for TradeMentor. Your role is to guide users through building their own trading strategy through a structured, educational process.
+const STRATEGY_SYSTEM_PROMPT = `You are a trading strategy development coach for Lumen. Your role is to guide users through building their own trading strategy through a structured, educational process.
 
 Your approach to strategy building:
 - Ask probing questions to understand the user's goals, experience, and constraints

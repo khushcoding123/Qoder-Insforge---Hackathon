@@ -13,7 +13,7 @@ export function Footer() {
                 <TrendingUp className="w-4 h-4 text-white" />
               </div>
               <span className="font-bold text-white text-lg">
-                TradeMentor <span className="text-zinc-200">AI</span>
+                Lumen
               </span>
             </div>
             <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
@@ -70,12 +70,12 @@ export function Footer() {
             <TriangleAlert className="w-5 h-5 text-zinc-300 flex-shrink-0 mt-0.5" />
             <p className="text-gray-400 text-xs leading-relaxed">
               <span className="text-zinc-200 font-semibold">Important Disclaimer: </span>
-              TradeMentor AI is an educational platform. Nothing on this platform constitutes financial advice, investment advice, trading advice, or any other sort of advice. Trading involves substantial risk of loss and is not appropriate for everyone. Past performance is not indicative of future results. You should consult with a qualified financial advisor before making any investment decisions. The creators of TradeMentor AI are not responsible for any financial losses incurred as a result of using this platform.
+              Lumen is an educational platform. Nothing on this platform constitutes financial advice, investment advice, trading advice, or any other sort of advice. Trading involves substantial risk of loss and is not appropriate for everyone. Past performance is not indicative of future results. You should consult with a qualified financial advisor before making any investment decisions. The creators of Lumen are not responsible for any financial losses incurred as a result of using this platform.
             </p>
           </div>
           <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-gray-600 text-xs">
-              © 2025 TradeMentor AI. Educational purposes only.
+              © 2025 Lumen. Educational purposes only.
             </p>
             <p className="text-gray-600 text-xs">
               Built for hackathon demonstration purposes.

@@ -1,4 +1,4 @@
-# TradeMentor AI
+# Lumen
 
 An AI-powered trading education platform that helps beginners and intermediate traders learn through structured practice, reflection, and guided reasoning.
 
@@ -6,7 +6,7 @@ An AI-powered trading education platform that helps beginners and intermediate t
 
 ## What This Is
 
-TradeMentor AI is an **educational platform** — not a signal service, not a get-rich-quick tool. It is a structured learning system built around a repeatable practice loop:
+Lumen is an **educational platform** — not a signal service, not a get-rich-quick tool. It is a structured learning system built around a repeatable practice loop:
 
 **Learn → Build → Practice → Reflect → Refine → Repeat**
 
@@ -144,7 +144,7 @@ src/
 
 ## Disclaimer
 
-TradeMentor AI is an **educational tool only**. Nothing on this platform constitutes financial advice. Trading financial instruments involves significant risk of loss. Past performance is not indicative of future results. Always consult a qualified financial professional before making investment decisions.
+Lumen is an **educational tool only**. Nothing on this platform constitutes financial advice. Trading financial instruments involves significant risk of loss. Past performance is not indicative of future results. Always consult a qualified financial professional before making investment decisions.
 
 ---
 

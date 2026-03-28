@@ -2,6 +2,8 @@
 
 import { createServerClient, setAuthCookies, clearAuthCookies, getAccessToken } from "@/lib/insforge-server";
 
+const DEV_UI_PREVIEW = process.env.NODE_ENV !== "production";
+
 export async function signUp(formData: {
   email: string;
   password: string;
@@ -109,6 +111,10 @@ export async function checkOnboardingStatus(): Promise<{
   authenticated: boolean;
   onboardingCompleted: boolean;
 }> {
+  if (DEV_UI_PREVIEW) {
+    return { authenticated: true, onboardingCompleted: true };
+  }
+
   const accessToken = await getAccessToken();
   if (!accessToken) return { authenticated: false, onboardingCompleted: false };
 

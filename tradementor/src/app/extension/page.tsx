@@ -79,7 +79,7 @@ function ExtensionPopup({ state }: { state: ExtensionState }) {
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center">
             <TrendingUp className="w-3.5 h-3.5 text-white" />
           </div>
-          <span className="text-white font-bold text-sm">TradeMentor</span>
+          <span className="text-white font-bold text-sm">Lumen</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className={`w-2 h-2 rounded-full ${state === "waiting" ? "bg-gray-500" : "bg-green-400 animate-pulse"}`} />
@@ -177,14 +177,14 @@ const HOW_IT_WORKS = [
     step: "01",
     icon: Globe,
     title: "Install the Extension",
-    desc: "Install TradeMentor for Chrome. It runs alongside any charting platform.",
+    desc: "Install Lumen for Chrome. It runs alongside any charting platform.",
     color: "text-blue-400",
   },
   {
     step: "02",
     icon: Target,
     title: "Load Your Strategy",
-    desc: "Select your strategy from TradeMentor. The extension loads your personalized checklist.",
+    desc: "Select your strategy from Lumen. The extension loads your personalized checklist.",
     color: "text-cyan-400",
   },
   {
@@ -212,7 +212,7 @@ const HOW_IT_WORKS = [
     step: "06",
     icon: Sparkles,
     title: "Log to Journal",
-    desc: "After the trade, one click logs it to your TradeMentor journal with pre-filled details.",
+    desc: "After the trade, one click logs it to your Lumen journal with pre-filled details.",
     color: "text-orange-400",
   },
 ];
@@ -239,7 +239,7 @@ export default function ExtensionPage() {
                   Trade with your coach <span className="text-gradient">always present</span>
                 </>
               }
-              description="The TradeMentor extension brings your checklist, confluence tracker, coaching prompts, and journaling workflow directly into the charting context where decisions actually happen."
+              description="The Lumen extension brings your checklist, confluence tracker, coaching prompts, and journaling workflow directly into the charting context where decisions actually happen."
             />
             <div className="mt-6 flex items-center justify-center gap-2">
               <Badge variant="yellow">Concept Demo</Badge>
@@ -364,7 +364,7 @@ export default function ExtensionPage() {
                 {
                   icon: Sparkles,
                   title: "One-Click Journal Logging",
-                  desc: "Post-trade: log directly to TradeMentor with pre-filled chart context.",
+                  desc: "Post-trade: log directly to Lumen with pre-filled chart context.",
                   color: "text-blue-400",
                   bg: "bg-blue-400/10",
                   border: "border-blue-400/20",
@@ -441,7 +441,7 @@ export default function ExtensionPage() {
             <TriangleAlert className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
             <p className="text-gray-400 text-xs leading-relaxed">
               <span className="text-yellow-400 font-semibold">Concept Demo: </span>
-              The Chrome Extension shown here is a concept prototype for demonstration purposes. The final product may differ. TradeMentor AI is an educational platform — the extension does not provide financial advice or guaranteed trading signals.
+              The Chrome Extension shown here is a concept prototype for demonstration purposes. The final product may differ. Lumen is an educational platform — the extension does not provide financial advice or guaranteed trading signals.
             </p>
           </div>
         </div>

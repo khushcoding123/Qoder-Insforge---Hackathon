@@ -1,10 +1,15 @@
 "use client";
 
 import { useMemo } from "react";
-import type { ChartScenario } from "@/lib/chart/scenarios";
+import { computeEMA, formatReplayPrice, formatReplayTimeLabel, getVisibleBars } from "@/lib/practice/replay";
+import type { PracticePhase, ReplayDataset, ReplayOutcome, TradePlan } from "@/lib/practice/types";
 
 interface Props {
-  scenario: ChartScenario;
+  dataset: ReplayDataset;
+  visibleCount: number;
+  tradePlan?: TradePlan | null;
+  outcome?: ReplayOutcome | null;
+  phase?: PracticePhase;
 }
 
 // SVG virtual canvas dimensions
@@ -13,32 +18,45 @@ const VB_H = 370;
 const M = { top: 26, right: 74, bottom: 36, left: 8 };
 const VOL_RATIO = 0.17; // volume panel takes 17% of chart height
 
-export function CandlestickChart({ scenario }: Props) {
-  const { candles, levels, ema20, ema50 } = scenario;
-  const n = candles.length;
+export function CandlestickChart({ dataset, visibleCount, tradePlan, outcome, phase = "planning" }: Props) {
+  const { bars, levels } = dataset;
+  const visibleBars = useMemo(() => getVisibleBars(dataset, visibleCount), [dataset, visibleCount]);
+  const totalBars = bars.length;
+  const visibleBarCount = visibleBars.length;
 
   const chartW = VB_W - M.left - M.right;
   const chartH = VB_H - M.top - M.bottom;
   const volH = chartH * VOL_RATIO;
   const priceH = chartH - volH - 6; // 6px gap between price and volume panels
 
+  const closes = useMemo(() => visibleBars.map((bar) => bar.close), [visibleBars]);
+  const ema20 = useMemo(() => computeEMA(closes, 20), [closes]);
+  const ema50 = useMemo(() => computeEMA(closes, 50), [closes]);
+
   // ── Price range ────────────────────────────────────────────────────────────
   const { priceMin, priceMax } = useMemo(() => {
-    const allH = candles.map((c) => c.high);
-    const allL = candles.map((c) => c.low);
+    const allH = visibleBars.map((c) => c.high);
+    const allL = visibleBars.map((c) => c.low);
+    const overlayValues = tradePlan
+      ? [tradePlan.entry, tradePlan.stopLoss, tradePlan.takeProfit]
+      : [];
     const rawMin = Math.min(...allL);
     const rawMax = Math.max(...allH);
-    const pad = (rawMax - rawMin) * 0.055;
-    return { priceMin: rawMin - pad, priceMax: rawMax + pad };
-  }, [candles]);
+    const overlayMin = overlayValues.length > 0 ? Math.min(...overlayValues) : rawMin;
+    const overlayMax = overlayValues.length > 0 ? Math.max(...overlayValues) : rawMax;
+    const minValue = Math.min(rawMin, overlayMin);
+    const maxValue = Math.max(rawMax, overlayMax);
+    const pad = (maxValue - minValue || rawMax * 0.02) * 0.055;
+    return { priceMin: minValue - pad, priceMax: maxValue + pad };
+  }, [tradePlan, visibleBars]);
 
   const maxVol = useMemo(
-    () => Math.max(...candles.map((c) => c.volume)),
-    [candles]
+    () => Math.max(...visibleBars.map((c) => c.volume)),
+    [visibleBars]
   );
 
   // ── Coordinate helpers ─────────────────────────────────────────────────────
-  const slotW = chartW / n;
+  const slotW = chartW / totalBars;
   const bodyW = Math.max(2, slotW * 0.72);
 
   const cx = (i: number) => M.left + i * slotW + slotW / 2;
@@ -70,16 +88,56 @@ export function CandlestickChart({ scenario }: Props) {
   // ── EMA SVG paths ──────────────────────────────────────────────────────────
   const emaPath = (ema: number[]) =>
     ema
-      .slice(0, n)
+      .slice(0, visibleBarCount)
       .map((v, i) => `${i === 0 ? "M" : "L"}${cx(i).toFixed(1)},${py(v).toFixed(1)}`)
       .join(" ");
 
   // ── Current price ──────────────────────────────────────────────────────────
-  const lastCandle = candles[n - 1];
+  const lastCandle = visibleBars[visibleBarCount - 1];
   const curPrice = lastCandle.close;
   const curY = py(curPrice);
   const isLastUp = lastCandle.close >= lastCandle.open;
   const priceColor = isLastUp ? "#26a69a" : "#ef5350";
+  const hiddenStartX = M.left + visibleBarCount * slotW;
+  const hiddenWidth = chartW - visibleBarCount * slotW;
+
+  const timeTicks = useMemo(() => {
+    if (visibleBars.length < 2) return [];
+    const checkpoints = Array.from(
+      new Set([
+        0,
+        Math.max(0, Math.floor((visibleBars.length - 1) * 0.33)),
+        Math.max(0, Math.floor((visibleBars.length - 1) * 0.66)),
+        visibleBars.length - 1,
+      ])
+    );
+
+    return checkpoints.map((index) => ({
+      x: cx(index),
+      label: formatReplayTimeLabel(visibleBars[index].time, dataset.timeframe),
+    }));
+  }, [dataset.timeframe, visibleBars]);
+
+  const planLines = tradePlan
+    ? [
+        { price: tradePlan.entry, label: "Entry", color: "#38bdf8" },
+        { price: tradePlan.stopLoss, label: "Stop", color: "#f87171" },
+        { price: tradePlan.takeProfit, label: "Target", color: "#4ade80" },
+      ]
+    : [];
+
+  const exitMarker = (() => {
+    if (!outcome || outcome.exitIndex === null || outcome.exitPrice === null || outcome.exitIndex >= visibleBarCount) {
+      return null;
+    }
+
+    return {
+      x: cx(outcome.exitIndex),
+      y: py(outcome.exitPrice),
+      label: outcome.resolution === "target_hit" ? "Target hit" : outcome.resolution === "stop_hit" ? "Stop hit" : "Session end",
+      color: outcome.resolution === "target_hit" ? "#4ade80" : outcome.resolution === "stop_hit" ? "#f87171" : "#e4e4e7",
+    };
+  })();
 
   return (
     <svg
@@ -115,12 +173,43 @@ export function CandlestickChart({ scenario }: Props) {
         strokeWidth="1"
       />
 
+      {/* ── Hidden future region ───────────────────────────────────────────── */}
+      {hiddenWidth > 0 && (
+        <>
+          <rect
+            x={hiddenStartX}
+            y={M.top}
+            width={hiddenWidth}
+            height={priceH + volH + 6}
+            fill="rgba(255,255,255,0.03)"
+          />
+          <line
+            x1={hiddenStartX}
+            y1={M.top}
+            x2={hiddenStartX}
+            y2={M.top + priceH + volH + 6}
+            stroke="rgba(255,255,255,0.12)"
+            strokeDasharray="4,4"
+          />
+          <text
+            x={hiddenStartX + hiddenWidth / 2}
+            y={M.top + 16}
+            textAnchor="middle"
+            fill="rgba(255,255,255,0.33)"
+            fontSize="10"
+            fontFamily="monospace"
+          >
+            Future hidden until replay
+          </text>
+        </>
+      )}
+
       {/* ── Support / Resistance levels ────────────────────────────────────── */}
       {levels.map((lvl, i) => {
         const y = py(lvl.price);
         if (y < M.top - 8 || y > M.top + priceH + 8) return null;
-        const col = lvl.type === "resistance" ? "#ef5350" : "#26a69a";
-        const op = lvl.strength === "strong" ? 0.55 : 0.3;
+        const col = lvl.type === "resistance" ? "#ef5350" : lvl.type === "support" ? "#26a69a" : "#c084fc";
+        const op = lvl.strength === "major" ? 0.55 : 0.3;
         return (
           <g key={`lvl-${i}`}>
             <line
@@ -147,6 +236,59 @@ export function CandlestickChart({ scenario }: Props) {
         );
       })}
 
+      {/* ── Trade plan overlays ─────────────────────────────────────────────── */}
+      {planLines.map((line) => {
+        const y = py(line.price);
+        return (
+          <g key={line.label}>
+            <line
+              x1={M.left}
+              y1={y}
+              x2={M.left + chartW}
+              y2={y}
+              stroke={line.color}
+              strokeWidth="1"
+              strokeDasharray="6,4"
+              strokeOpacity="0.55"
+            />
+            <text
+              x={M.left + 6}
+              y={y - 4}
+              fill={line.color}
+              fontSize="9"
+              fontFamily="monospace"
+            >
+              {line.label} {formatReplayPrice(line.price)}
+            </text>
+          </g>
+        );
+      })}
+
+      {exitMarker ? (
+        <g>
+          <line
+            x1={exitMarker.x}
+            y1={M.top}
+            x2={exitMarker.x}
+            y2={M.top + priceH + volH + 6}
+            stroke={exitMarker.color}
+            strokeWidth="1"
+            strokeDasharray="4,4"
+            strokeOpacity="0.42"
+          />
+          <circle cx={exitMarker.x} cy={exitMarker.y} r="4.2" fill={exitMarker.color} fillOpacity="0.95" />
+          <text
+            x={Math.min(M.left + chartW - 4, exitMarker.x + 8)}
+            y={Math.max(M.top + 12, exitMarker.y - 8)}
+            fill={exitMarker.color}
+            fontSize="9"
+            fontFamily="monospace"
+          >
+            {exitMarker.label}
+          </text>
+        </g>
+      ) : null}
+
       {/* ── EMA 50 (purple) ────────────────────────────────────────────────── */}
       <path
         d={emaPath(ema50)}
@@ -166,7 +308,7 @@ export function CandlestickChart({ scenario }: Props) {
       />
 
       {/* ── Candles + Volume bars ──────────────────────────────────────────── */}
-      {candles.map((c, i) => {
+      {visibleBars.map((c, i) => {
         const x = cx(i);
         const isGreen = c.close >= c.open;
         const col = isGreen ? "#26a69a" : "#ef5350";
@@ -268,8 +410,34 @@ export function CandlestickChart({ scenario }: Props) {
 
       {/* ── Symbol / timeframe overlay ─────────────────────────────────────── */}
       <text x={M.left + 6} y={M.top - 8} fill="rgba(255,255,255,0.35)" fontSize="10" fontFamily="monospace">
-        {scenario.symbol} · {scenario.timeframe} · {scenario.assetType}
+        {dataset.symbol} · {dataset.timeframe} · {dataset.assetType}
       </text>
+
+      {/* ── Phase / progress overlay ───────────────────────────────────────── */}
+      <text
+        x={M.left + chartW - 6}
+        y={M.top - 8}
+        textAnchor="end"
+        fill="rgba(255,255,255,0.35)"
+        fontSize="10"
+        fontFamily="monospace"
+      >
+        {phase.toUpperCase()} · {visibleBarCount}/{totalBars} bars visible
+      </text>
+
+      {/* ── Time axis labels ───────────────────────────────────────────────── */}
+      {timeTicks.map((tick) => (
+        <text
+          key={`${tick.x}-${tick.label}`}
+          x={tick.x}
+          y={VB_H - 4}
+          textAnchor="middle"
+          fill="rgba(255,255,255,0.32)"
+          fontSize="9"
+        >
+          {tick.label}
+        </text>
+      ))}
 
       {/* ── Legend ────────────────────────────────────────────────────────── */}
       <g transform={`translate(${M.left + 4},${VB_H - M.bottom + 12})`}>
@@ -285,6 +453,8 @@ export function CandlestickChart({ scenario }: Props) {
         <text x="256" y="8" fill="rgba(255,255,255,0.38)" fontSize="9">Resistance</text>
         <line x1="316" y1="4" x2="332" y2="4" stroke="#26a69a" strokeWidth="1" strokeOpacity="0.5" strokeDasharray="4,3" />
         <text x="336" y="8" fill="rgba(255,255,255,0.38)" fontSize="9">Support</text>
+        <line x1="388" y1="4" x2="404" y2="4" stroke="#38bdf8" strokeWidth="1" strokeOpacity="0.7" strokeDasharray="5,4" />
+        <text x="408" y="8" fill="rgba(255,255,255,0.38)" fontSize="9">Plan levels</text>
       </g>
     </svg>
   );

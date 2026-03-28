@@ -4,7 +4,7 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-const JOURNAL_SYSTEM_PROMPT = `You are a trading journal analysis coach for TradeMentor. Your role is to help traders identify patterns, psychological tendencies, and areas for improvement from their trading journals.
+const JOURNAL_SYSTEM_PROMPT = `You are a trading journal analysis coach for Lumen. Your role is to help traders identify patterns, psychological tendencies, and areas for improvement from their trading journals.
 
 Your analysis approach:
 - Look for behavioral patterns across multiple trades (not individual trade critique)

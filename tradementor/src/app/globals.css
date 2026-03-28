@@ -287,14 +287,36 @@ body {
 
 .auth-shell {
   min-height: 100vh;
+  min-height: 100svh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1rem;
+  padding: clamp(1.5rem, 4vw, 2.5rem) 1rem;
   background:
     radial-gradient(circle at top, rgba(143, 184, 255, 0.05), transparent 28%),
     radial-gradient(circle at 82% 18%, rgba(139, 125, 232, 0.05), transparent 22%),
     var(--background);
+}
+
+.auth-shell-frame {
+  width: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 1.5rem;
+  margin-inline: auto;
+  min-height: calc(100svh - (2 * clamp(1.5rem, 4vw, 2.5rem)));
+}
+
+.auth-shell-brand {
+  justify-self: center;
+  align-self: start;
+}
+
+.auth-shell-main {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 0;
 }
 
 .auth-card {
@@ -387,6 +409,16 @@ body {
 
   .auth-card {
     padding: 2.25rem;
+  }
+}
+
+@media (max-height: 820px) {
+  .auth-shell-frame {
+    min-height: auto;
+  }
+
+  .auth-shell-main {
+    justify-content: flex-start;
   }
 }
 

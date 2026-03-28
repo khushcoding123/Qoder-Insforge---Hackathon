@@ -31,6 +31,138 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Macroeconomics": "#EF4444",
 };
 
+const FALLBACK_TOPIC_LIBRARY: TopicSuggestion[] = [
+  {
+    id: "market-structure-basics",
+    title: "Understanding Market Structure",
+    description: "Learn how trends, swings, and structure shifts create context for every trade idea.",
+    category: "Market Structure",
+    difficulty: "Beginner",
+    reason: "Strong structure reading makes every other trading skill easier to apply well.",
+    icon: "TrendingUp",
+  },
+  {
+    id: "support-resistance-zones",
+    title: "Support and Resistance Zones",
+    description: "See how price reacts around key zones and why reactions there matter.",
+    category: "Technical Analysis",
+    difficulty: "Beginner",
+    reason: "This gives you a cleaner framework for entries, exits, and trade location.",
+    icon: "Layers",
+  },
+  {
+    id: "risk-reward-basics",
+    title: "Risk-to-Reward Foundations",
+    description: "Use position risk and reward planning before entering a trade.",
+    category: "Risk Management",
+    difficulty: "Beginner",
+    reason: "Risk control is the fastest way to make your process more durable.",
+    icon: "Shield",
+  },
+  {
+    id: "building-a-trading-playbook",
+    title: "Building a Trading Playbook",
+    description: "Turn scattered ideas into a repeatable set of setups, rules, and reviews.",
+    category: "Psychology",
+    difficulty: "Intermediate",
+    reason: "A clear playbook helps connect learning with disciplined execution.",
+    icon: "BookOpen",
+  },
+  {
+    id: "trend-continuation-entries",
+    title: "Trend Continuation Entries",
+    description: "Identify cleaner pullback entries inside established directional moves.",
+    category: "Technical Analysis",
+    difficulty: "Intermediate",
+    reason: "This fits traders who want more structure around timing and confirmation.",
+    icon: "Target",
+  },
+  {
+    id: "order-flow-context",
+    title: "Order Flow Context",
+    description: "Understand how aggression, liquidity, and participation shape short-term movement.",
+    category: "Order Flow",
+    difficulty: "Advanced",
+    reason: "This adds nuance once you already understand the basics of structure and risk.",
+    icon: "Activity",
+  },
+];
+
+function matchesExperience(topicDifficulty: TopicSuggestion["difficulty"], experience: OnboardingProfile["experience"]) {
+  const topicLevel = { Beginner: 0, Intermediate: 1, Advanced: 2 }[topicDifficulty] ?? 0;
+  const userLevel = { beginner: 0, basic: 0, intermediate: 1, advanced: 2 }[experience] ?? 0;
+  return topicLevel <= userLevel;
+}
+
+function buildFallbackTopics(profile: OnboardingProfile): TopicSuggestion[] {
+  const goalCategories: Record<OnboardingProfile["goal"], string[]> = {
+    "learning-basics": ["Market Structure", "Technical Analysis", "Risk Management"],
+    "becoming-consistent": ["Risk Management", "Psychology", "Technical Analysis"],
+    "building-strategy": ["Technical Analysis", "Market Structure", "Psychology"],
+    "improving-discipline": ["Psychology", "Risk Management", "Market Structure"],
+  };
+
+  const preferredCategories = goalCategories[profile.goal] ?? [];
+  const familiarity = new Set(profile.familiarity.map((item) => item.toLowerCase()));
+
+  const ranked = [...FALLBACK_TOPIC_LIBRARY].sort((a, b) => {
+    const aGoalScore = preferredCategories.includes(a.category) ? 2 : 0;
+    const bGoalScore = preferredCategories.includes(b.category) ? 2 : 0;
+    const aExperienceScore = matchesExperience(a.difficulty, profile.experience) ? 1 : -2;
+    const bExperienceScore = matchesExperience(b.difficulty, profile.experience) ? 1 : -2;
+    const aFamiliarityScore = familiarity.has(a.category.toLowerCase()) ? -1 : 1;
+    const bFamiliarityScore = familiarity.has(b.category.toLowerCase()) ? -1 : 1;
+    return (bGoalScore + bExperienceScore + bFamiliarityScore) - (aGoalScore + aExperienceScore + aFamiliarityScore);
+  });
+
+  const selected = ranked.filter((topic) => matchesExperience(topic.difficulty, profile.experience)).slice(0, 4);
+  return selected.length === 4 ? selected : ranked.slice(0, 4);
+}
+
+async function readErrorResponse(response: Response): Promise<string | null> {
+  try {
+    const contentType = response.headers.get("content-type") ?? "";
+
+    if (contentType.includes("application/json")) {
+      const payload = await response.json() as { error?: unknown };
+      return typeof payload.error === "string" ? payload.error : null;
+    }
+
+    const text = (await response.text()).trim();
+    return text || null;
+  } catch {
+    return null;
+  }
+}
+
+function parseSuggestedTopicsPayload(payload: string): TopicSuggestion[] | null {
+  const clean = payload.replace(/^```[\w]*\n?/m, "").replace(/\n?```$/m, "").trim();
+  if (!clean) return null;
+
+  const parsed = JSON.parse(clean) as unknown;
+  const topicList = Array.isArray(parsed)
+    ? parsed
+    : typeof parsed === "object" && parsed !== null && "topics" in parsed && Array.isArray(parsed.topics)
+      ? parsed.topics
+      : null;
+
+  if (!topicList) return null;
+
+  return topicList.filter((topic): topic is TopicSuggestion => {
+    if (!topic || typeof topic !== "object") return false;
+    const candidate = topic as Partial<TopicSuggestion>;
+    return [
+      candidate.id,
+      candidate.title,
+      candidate.description,
+      candidate.category,
+      candidate.difficulty,
+      candidate.reason,
+      candidate.icon,
+    ].every((value) => typeof value === "string" && value.length > 0);
+  });
+}
+
 // ─── FormattedMessage ─────────────────────────────────────────────────────────
 
 function FormattedMessage({ content, isStreaming }: { content: string; isStreaming?: boolean }) {
@@ -259,6 +391,7 @@ function LearnPageContent() {
   const [profile, setProfile] = useState<OnboardingProfile | null>(null);
   const [userName, setUserName] = useState("");
   const [suggestedTopics, setSuggestedTopics] = useState<TopicSuggestion[]>([]);
+  const [generationNotice, setGenerationNotice] = useState<string | null>(null);
   const [activeTopic, setActiveTopic] = useState<TopicSuggestion | null>(null);
   const [completedTopics, setCompletedTopics] = useState<Set<string>>(new Set());
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
@@ -293,6 +426,7 @@ function LearnPageContent() {
 
   async function generateTopics(p: OnboardingProfile) {
     setIsGenerating(true);
+    setGenerationNotice(null);
     let text = "";
     try {
       const res = await fetch("/api/ai/learn", {
@@ -300,6 +434,21 @@ function LearnPageContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "generate-topics", profile: p }),
       });
+      if (!res.ok) {
+        const apiError = await readErrorResponse(res);
+        setSuggestedTopics(buildFallbackTopics(p));
+        setGenerationNotice(
+          apiError
+            ? `Showing curated starter topics while AI suggestions are unavailable: ${apiError}`
+            : "Showing curated starter topics while AI suggestions are unavailable."
+        );
+        return;
+      }
+      if (!res.body) {
+        setSuggestedTopics(buildFallbackTopics(p));
+        setGenerationNotice("Showing curated starter topics while AI suggestions are unavailable.");
+        return;
+      }
       const reader = res.body!.getReader();
       const decoder = new TextDecoder();
       while (true) {
@@ -307,11 +456,16 @@ function LearnPageContent() {
         if (done) break;
         text += decoder.decode(value);
       }
-      const clean = text.replace(/^```[\w]*\n?/m, "").replace(/\n?```$/m, "").trim();
-      const parsed: TopicSuggestion[] = JSON.parse(clean);
+      const parsed = parseSuggestedTopicsPayload(text);
+      if (!parsed || parsed.length === 0) {
+        setSuggestedTopics(buildFallbackTopics(p));
+        setGenerationNotice("Showing curated starter topics while AI suggestions are unavailable.");
+        return;
+      }
       setSuggestedTopics(parsed);
-    } catch (e) {
-      console.error("Topic generation failed", e);
+    } catch {
+      setSuggestedTopics(buildFallbackTopics(p));
+      setGenerationNotice("Showing curated starter topics while AI suggestions are unavailable.");
     } finally {
       setIsGenerating(false);
     }
@@ -437,6 +591,9 @@ function LearnPageContent() {
                     <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
                     <span className="text-gray-400 text-xs font-medium uppercase tracking-wider">AI Suggested</span>
                   </div>
+                  {generationNotice ? (
+                    <p className="mb-2 px-1 text-[11px] leading-5 text-amber-300/80">{generationNotice}</p>
+                  ) : null}
                   {isGenerating ? (
                     <div className="space-y-2">
                       {[1, 2, 3, 4].map((i) => (

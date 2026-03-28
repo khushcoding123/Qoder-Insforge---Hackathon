@@ -9,9 +9,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "TradeMentor AI - Learn to Trade. Think Like a Strategist.",
+  title: "Lumen - Learn to Trade. Think Like a Strategist.",
   description:
-    "TradeMentor AI is an educational trading platform powered by AI. Learn market structure, build strategies, practice with a coach, and reflect on your journal entries.",
+    "Lumen is an educational trading platform powered by AI. Learn market structure, build strategies, practice with a coach, and reflect on your journal entries.",
 };
 
 export default function RootLayout({

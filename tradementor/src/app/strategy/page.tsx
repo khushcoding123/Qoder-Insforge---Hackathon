@@ -105,9 +105,15 @@ export default function StrategyPage() {
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [savedStrategyName, setSavedStrategyName] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const containerEl = messagesContainerRef.current;
+    if (containerEl) {
+      containerEl.scrollTo({ top: containerEl.scrollHeight, behavior: "auto" });
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+    }
   }, [messages, streamingContent]);
 
   const handleSend = async (overrideMessage?: string) => {
@@ -510,7 +516,7 @@ Please analyze these inputs, ask me clarifying questions to understand my goals 
                       </div>
 
                       {/* Messages */}
-                      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
                         {messages.map((msg, i) => (
                           <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                             <div

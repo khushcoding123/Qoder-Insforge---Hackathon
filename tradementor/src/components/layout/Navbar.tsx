@@ -9,6 +9,8 @@ import { cn } from "@/lib/cn";
 import { insforge } from "@/lib/insforge";
 import { signOut } from "@/lib/actions/auth";
 
+const DEV_UI_PREVIEW = process.env.NODE_ENV !== "production";
+
 const navLinks = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/learn", label: "Learn" },
@@ -28,6 +30,7 @@ export function Navbar() {
   const [authChecked, setAuthChecked] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const isPreviewUser = user?.email === "preview@lumen.local";
 
   const isAuthRoute = AUTH_ROUTES.some((r) => pathname.startsWith(r));
 
@@ -37,6 +40,11 @@ export function Navbar() {
         setUser({
           name: data.user.profile?.name ?? data.user.email,
           email: data.user.email,
+        });
+      } else if (DEV_UI_PREVIEW) {
+        setUser({
+          name: "Preview User",
+          email: "preview@lumen.local",
         });
       }
       setAuthChecked(true);
@@ -85,12 +93,12 @@ export function Navbar() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href={user ? "/dashboard" : "/"} className="group flex items-center gap-3">
+          <Link href="/" className="group flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-purple-500 shadow-[0_0_18px_rgba(0,229,255,0.22)] transition-all duration-300 group-hover:shadow-[0_0_24px_rgba(0,229,255,0.32)]">
               <TrendingUp className="h-4.5 w-4.5 text-white" />
             </div>
             <span className="text-lg font-semibold tracking-tight text-white">
-              TradeMentor <span className="text-zinc-200">AI</span>
+              Lumen
             </span>
           </Link>
 
@@ -158,12 +166,18 @@ export function Navbar() {
                         >
                           <User className="w-4 h-4" /> Dashboard
                         </Link>
-                        <button
-                          onClick={handleSignOut}
-                          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 transition-all hover:bg-red-400/5 hover:text-red-300"
-                        >
-                          <LogOut className="w-4 h-4" /> Sign Out
-                        </button>
+                        {isPreviewUser ? (
+                          <div className="px-4 py-2.5 text-xs text-zinc-500">
+                            Preview mode active
+                          </div>
+                        ) : (
+                          <button
+                            onClick={handleSignOut}
+                            className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 transition-all hover:bg-red-400/5 hover:text-red-300"
+                          >
+                            <LogOut className="w-4 h-4" /> Sign Out
+                          </button>
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -228,12 +242,16 @@ export function Navbar() {
             })}
             <div className="pt-2 border-t border-white/10 mt-2">
               {user ? (
-                <button
-                  onClick={handleSignOut}
-                  className="w-full flex items-center gap-2 px-4 py-2.5 text-red-400 text-sm rounded-lg hover:bg-red-400/5"
-                >
-                  <LogOut className="w-4 h-4" /> Sign Out
-                </button>
+                isPreviewUser ? (
+                  <div className="px-4 py-2.5 text-sm text-zinc-500">Preview mode active</div>
+                ) : (
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-red-400 text-sm rounded-lg hover:bg-red-400/5"
+                  >
+                    <LogOut className="w-4 h-4" /> Sign Out
+                  </button>
+                )
               ) : (
                 <Link
                   href="/signup"

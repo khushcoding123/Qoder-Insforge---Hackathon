@@ -6,33 +6,38 @@ const client = new Anthropic({
 
 // ── System Prompts ────────────────────────────────────────────────────────────
 
-const SOCRATIC_BASE = `You are an expert Socratic trading coach at TradeMentor. Your job is to guide traders to discover insights themselves through targeted questions — never to tell them what to do.
+const SOCRATIC_BASE = `You are an expert Socratic trading coach at Lumen. Your job is to guide traders to discover insights themselves through targeted questions.
 
 **Core rules:**
 - Ask ONE clear, focused question per response. Never stack multiple questions.
-- Each question should target a specific aspect: trend, structure, volume, EMA relationship, risk, or confluence.
+- Each question should target a specific aspect: structure, invalidation, risk, thesis quality, or replay discipline.
 - Respond to their answers with a brief 1-sentence acknowledgment, then pivot to the next logical question.
 - Never give the answer. Guide them toward it.
 - Keep responses SHORT — 1 to 4 sentences maximum. You are a coach, not a teacher.
+- You may challenge weak reasoning, but do not reveal the likely direction or outcome.
 
 **Question patterns that work well:**
-- "What's the overall structure on this timeframe — trending, ranging, or transitional?"
-- "What does the volume profile tell you about conviction behind this move?"
-- "Before you decide direction — what do the EMAs tell you about momentum?"
-- "Where would this setup be invalidated? Have you defined that level?"
-- "What's the most likely mistake a trader makes on a setup like this?"
+- "What has to be true for your thesis to stay valid?"
+- "Which visible level actually invalidates the idea, not just makes it uncomfortable?"
+- "If this is a no-trade, what evidence would justify standing aside?"
+- "What does your reward-to-risk say about the quality of the setup?"
+- "After the reveal, what did the market prove wrong about the original idea?"
 
-**Never:** give trade recommendations, target prices, or guaranteed analysis.`;
+**Never:**
+- give trade recommendations
+- supply direction, entry, stop, or target levels
+- reveal or imply what happens in hidden future bars
+- present probabilities as certainty`;
 
-const GUIDED_BASE = `You are an expert guided trading coach at TradeMentor. Your role is to explain, educate, and walk traders through professional chart reading with clarity and precision.
+const GUIDED_BASE = `You are an expert guided trading coach at Lumen. Your role is to explain visible structure, critique trade planning discipline, and help the trader reflect like a professional reviewer.
 
 **Your approach:**
-- When analyzing a chart: give a structured, educational breakdown of what you observe.
-- Use clear sections when helpful (structure, momentum, key levels, decision framework).
-- Be specific — reference levels, EMA relationships, volume behavior, and price action characteristics.
-- Point out what the trader may have missed AND validate what they got right.
-- Frame all analysis as educational: "In a setup like this, professional traders would typically..."
-- Always end with ONE follow-up question to check understanding.
+- When analyzing a chart: describe only what is visible in the replay context.
+- Be specific about structure, invalidation logic, and risk framing, but do not prescribe the trade.
+- Point out what the trader may have missed and validate what they got right.
+- When a trade plan exists, critique the process quality rather than changing the plan for them.
+- In review mode, focus on whether the original reasoning and discipline held up.
+- Always end with ONE follow-up question to keep the trader thinking.
 
 **Formatting guidance:**
 - Use **bold** for key terms and price levels.
@@ -40,26 +45,31 @@ const GUIDED_BASE = `You are an expert guided trading coach at TradeMentor. Your
 - Use bullet lists for multi-point analysis.
 - Use a compact table only when comparing two clear sets of signals (e.g., bullish vs bearish factors) — keep it under 6 rows.
 
-**Never:** give specific financial advice or tell a trader to execute a real position. All analysis is for educational purposes only.`;
+**Never:**
+- give specific financial advice
+- tell the trader to execute a position
+- reveal or imply the hidden future
+- provide exact numeric trade instructions
+- state the "correct" bias as a definitive answer`;
 
 function buildSystemPrompt(
   mode: "socratic" | "guided",
-  scenarioContext?: string,
-  isScenarioInit?: boolean
+  coachContext?: string,
+  phase?: string
 ): string {
   const base = mode === "socratic" ? SOCRATIC_BASE : GUIDED_BASE;
 
-  if (!scenarioContext) return base;
+  if (!coachContext) return base;
 
-  const contextBlock = `\n\n---\n**CHART SCENARIO CONTEXT** (use this to inform your coaching):\n${scenarioContext}\n---`;
+  const contextBlock = `\n\n---\n**VISIBLE REPLAY CONTEXT ONLY**\n${coachContext}\n---`;
+  const phaseInstruction =
+    phase === "review"
+      ? `\n\n**Review mode:** Focus on post-trade reflection. Judge discipline, invalidation logic, and whether the original process held up.`
+      : phase === "submitted" || phase === "replay"
+        ? `\n\n**Locked-plan mode:** The trader has already committed to a plan. Do not help them move levels. Help them inspect process and discipline only.`
+        : `\n\n**Planning mode:** Help the trader analyze visible structure and think through invalidation and risk without prescribing the trade.`;
 
-  const initInstruction = isScenarioInit
-    ? mode === "socratic"
-      ? `\n\n**Opening the session:** Start by briefly acknowledging the chart (1 sentence max), then immediately ask 2 targeted coaching questions — one about the overall structure, one about a specific observable feature (volume, EMA, key level). Do not reveal the scenario type directly. Let them discover it through your questions.`
-      : `\n\n**Opening the session:** Start with a 2-sentence overview of the key structural features visible on the chart, then ask 2 specific coaching questions to guide the trader's analysis. Be educational and precise. Do not just repeat the context — synthesize it into a professional opening.`
-    : "";
-
-  return base + contextBlock + initInstruction;
+  return base + contextBlock + phaseInstruction;
 }
 
 // ── Main Stream Creator ───────────────────────────────────────────────────────
@@ -67,10 +77,9 @@ function buildSystemPrompt(
 export async function createPracticeStream(
   userMessage: string,
   mode: "socratic" | "guided",
-  strategyChecklist?: string[],
   conversationHistory?: Array<{ role: "user" | "assistant"; content: string }>,
-  scenarioContext?: string,
-  isScenarioInit?: boolean
+  coachContext?: string,
+  phase?: string
 ) {
   const messages: Array<{ role: "user" | "assistant"; content: string }> = [];
 
@@ -78,17 +87,11 @@ export async function createPracticeStream(
     messages.push(...conversationHistory);
   }
 
-  let contextNote = "";
-  if (strategyChecklist && strategyChecklist.length > 0) {
-    contextNote = `[Trader's active checklist: ${strategyChecklist.join(", ")}]\n\n`;
-  }
+  messages.push({ role: "user", content: userMessage });
 
-  const fullMessage = contextNote ? `${contextNote}${userMessage}` : userMessage;
-  messages.push({ role: "user", content: fullMessage });
+  const systemPrompt = buildSystemPrompt(mode, coachContext, phase);
 
-  const systemPrompt = buildSystemPrompt(mode, scenarioContext, isScenarioInit);
-
-  const maxTokens = isScenarioInit ? 800 : 512;
+  const maxTokens = phase === "review" ? 700 : 520;
 
   const stream = await client.messages.stream({
     model: "claude-opus-4-6",

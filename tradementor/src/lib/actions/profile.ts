@@ -10,7 +10,21 @@ export interface OnboardingProfile {
   timeCommitment: "casual" | "moderate" | "serious";
 }
 
+const DEV_UI_PREVIEW = process.env.NODE_ENV !== "production";
+
+const DEV_PREVIEW_PROFILE: OnboardingProfile = {
+  experience: "intermediate",
+  familiarity: ["price-action", "risk-management", "psychology"],
+  markets: ["stocks", "crypto"],
+  goal: "building-strategy",
+  timeCommitment: "moderate",
+};
+
 export async function saveOnboardingProfile(profile: OnboardingProfile) {
+  if (DEV_UI_PREVIEW) {
+    return { success: true };
+  }
+
   const accessToken = await getAccessToken();
   if (!accessToken) return { success: false, error: "Not authenticated." };
 
@@ -41,6 +55,10 @@ export async function saveOnboardingProfile(profile: OnboardingProfile) {
 }
 
 export async function getOnboardingProfile(): Promise<OnboardingProfile | null> {
+  if (DEV_UI_PREVIEW) {
+    return DEV_PREVIEW_PROFILE;
+  }
+
   const accessToken = await getAccessToken();
   if (!accessToken) return null;
 
@@ -62,6 +80,10 @@ export async function getOnboardingProfile(): Promise<OnboardingProfile | null> 
 }
 
 export async function markTopicComplete(topicId: string, topicTitle: string, topicCategory: string) {
+  if (DEV_UI_PREVIEW) {
+    return { success: true };
+  }
+
   const accessToken = await getAccessToken();
   if (!accessToken) return { success: false };
 
@@ -89,6 +111,8 @@ export async function markTopicComplete(topicId: string, topicTitle: string, top
 }
 
 export async function getLearnProgress() {
+  if (DEV_UI_PREVIEW) return [];
+
   const accessToken = await getAccessToken();
   if (!accessToken) return [];
 

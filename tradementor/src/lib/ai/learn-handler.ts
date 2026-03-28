@@ -38,7 +38,7 @@ function buildTeacherPrompt(profile: OnboardingProfile): string {
     "improving-discipline": "mastering trading psychology and process",
   }[profile.goal] ?? profile.goal;
 
-  return `You are a personalized AI trading tutor for TradeMentor. You teach trading concepts through structured, credible, visual explanations — like a world-class mentor, not a generic chatbot.
+  return `You are a personalized AI trading tutor for Lumen. You teach trading concepts through structured, credible, visual explanations — like a world-class mentor, not a generic chatbot.
 
 ## Student Profile
 - Experience: ${profile.experience}
@@ -95,7 +95,7 @@ Include [DIAGRAM: type] at the most relevant point in your explanation. Use only
 
 // ─── Topic Generation ─────────────────────────────────────────────────────────
 
-const TOPIC_GEN_PROMPT = `You are a personalized learning path generator for TradeMentor.
+const TOPIC_GEN_PROMPT = `You are a personalized learning path generator for Lumen.
 
 Given a student's trading profile, generate exactly 4 topic recommendations as a JSON array.
 Respond ONLY with a valid JSON array — no markdown, no explanation, just the array.

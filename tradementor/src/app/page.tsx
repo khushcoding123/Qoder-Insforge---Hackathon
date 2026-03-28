@@ -74,7 +74,7 @@ const COMPARISON = {
     "Alert services: Creates dependency, not skill",
   ],
   good: [
-    "TradeMentor: Teaches you HOW to think",
+    "Lumen: Teaches you HOW to think",
     "Guided strategy construction step by step",
     "Real feedback on your actual behavior",
     "Builds independence and genuine edge",
@@ -102,7 +102,7 @@ export default function LandingPage() {
         <div className="relative z-10 mx-auto max-w-6xl">
           <ScrollAnimatedText className="text-center mb-16">
             <div className="page-kicker mx-auto mb-4">The Method</div>
-            <h2 className="section-heading mx-auto mb-4 max-w-3xl">The TradeMentor Learning Loop</h2>
+            <h2 className="section-heading mx-auto mb-4 max-w-3xl">The Lumen Learning Loop</h2>
             <p className="section-copy mx-auto">
               Six interconnected phases designed to build genuine trading skill through repetition and reflection.
             </p>
@@ -164,7 +164,7 @@ export default function LandingPage() {
               <div className="premium-panel p-6">
                 <div className="flex items-center gap-2 mb-5">
                   <CircleCheck className="w-5 h-5 text-green-400" />
-                  <h3 className="text-green-400 font-semibold">The TradeMentor Way</h3>
+                  <h3 className="text-green-400 font-semibold">The Lumen Way</h3>
                 </div>
                 <ul className="space-y-3">
                   {COMPARISON.good.map((item) => (
@@ -227,7 +227,7 @@ export default function LandingPage() {
                     <div className="h-2.5 w-2.5 rounded-full bg-green-400/50" />
                   </div>
                   <div className="mx-4 flex-1 rounded-full border border-white/8 bg-black/20 px-4 py-1 text-xs text-zinc-500">
-                    tradementor.ai/dashboard
+                    lumen.ai/dashboard
                   </div>
                 </div>
 
@@ -334,7 +334,7 @@ export default function LandingPage() {
             <Shield className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
             <p className="text-gray-500 text-xs leading-relaxed">
               <span className="text-yellow-400 font-semibold">Educational Platform Only. </span>
-              TradeMentor AI is an educational platform. Nothing on this platform constitutes financial advice. Trading involves risk. Past performance is not indicative of future results. Always consult a qualified financial advisor.
+              Lumen is an educational platform. Nothing on this platform constitutes financial advice. Trading involves risk. Past performance is not indicative of future results. Always consult a qualified financial advisor.
             </p>
           </div>
         </div>

@@ -1,62 +1,62 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Brain,
-  Send,
-  ChevronRight,
-  SquareCheck,
-  Square,
-  Shuffle,
-  TriangleAlert,
-  Target,
-  Shield,
-  Layers,
-  RotateCcw,
+  CheckCircle2,
   ChevronDown,
-  Eye,
+  FastForward,
+  Flag,
+  Gauge,
+  Layers,
+  Lock,
+  Play,
+  RotateCcw,
+  Send,
+  Shield,
+  Shuffle,
+  Target,
+  Trophy,
+  TriangleAlert,
 } from "lucide-react";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
-import { GlowCard } from "@/components/ui/GlowCard";
-import { Badge } from "@/components/ui/Badge";
-import { StreamingTextFormatted } from "@/components/ui/StreamingText";
-import { CandlestickChart } from "@/components/ui/CandlestickChart";
-import { PageHeader } from "@/components/ui/PageHeader";
-import {
-  generateScenario,
-  SCENARIO_TYPES,
-  SCENARIO_META,
-  type ChartScenario,
-  type ScenarioType,
-} from "@/lib/chart/scenarios";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+import { Footer } from "@/components/layout/Footer";
+import { Navbar } from "@/components/layout/Navbar";
+import { Badge } from "@/components/ui/Badge";
+import { CandlestickChart } from "@/components/ui/CandlestickChart";
+import { GlowCard } from "@/components/ui/GlowCard";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { StreamingTextFormatted } from "@/components/ui/StreamingText";
+import {
+  buildPracticeReview,
+  createEmptyTradePlanDraft,
+  evaluateReplayOutcome,
+  getReplayResolutionVisibleCount,
+  parseTradePlan,
+  validateTradePlan,
+} from "@/lib/practice/evaluation";
+import {
+  buildReplaySession,
+  buildReplayCoachContext,
+  derivePracticePhase,
+  formatReplayPrice,
+  getNextVisibleCount,
+  getRandomReplayChoice,
+  getReplayCatalog,
+  getReplayChoiceById,
+} from "@/lib/practice/replay";
+import type { PracticePhase, ReplayDataset, ReplayOutcome, TradePlan, TradePlanDraft } from "@/lib/practice/types";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
 
-// Internal conversation history (always starts with user turn for Claude API)
 interface ConversationEntry {
   role: "user" | "assistant";
   content: string;
 }
-
-// ── Constants ─────────────────────────────────────────────────────────────────
-
-const DEFAULT_CHECKLIST = [
-  "Higher timeframe trend identified",
-  "Trading with the trend (not against it)",
-  "Key structure level confirmed",
-  "Entry trigger present",
-  "Risk calculated (max 1% account)",
-  "Stop loss placed at invalidation point",
-  "Minimum 2:1 R:R confirmed",
-  "No major news in next 30 minutes",
-];
 
 const DIFFICULTY_COLORS = {
   Beginner: "green" as const,
@@ -64,58 +64,14 @@ const DIFFICULTY_COLORS = {
   Advanced: "red" as const,
 };
 
-const SCENARIO_KEY_QUESTIONS: Record<ScenarioType, string[]> = {
-  breakout: [
-    "What makes a breakout 'genuine' vs a fake one?",
-    "How does volume confirm or deny this move?",
-    "Where is the logical invalidation for a long here?",
-  ],
-  failed_breakout: [
-    "What would have tipped you off before the reversal?",
-    "How does this change your bias going forward?",
-    "Where would you look to enter short on this setup?",
-  ],
-  pullback_in_trend: [
-    "Is this pullback corrective or impulsive?",
-    "What confluence do the EMAs provide here?",
-    "What would make this a high-quality entry zone?",
-  ],
-  range_bound: [
-    "Where are the highest-probability entries in a range?",
-    "What signal would tell you the range is breaking?",
-    "Is there a bias for long or short at current price?",
-  ],
-  reversal_attempt: [
-    "What evidence supports a reversal vs continuation?",
-    "How would you manage risk if you faded the trend here?",
-    "What confirmation would you need before acting?",
-  ],
-  support_resistance_reaction: [
-    "Is this a high-probability area to fade or break?",
-    "How many times has this level been tested?",
-    "What would tip the balance toward a breakout?",
-  ],
-  momentum_continuation: [
-    "What characteristics confirm this as a continuation?",
-    "Where does the flag end and the breakout begin?",
-    "How does volume behavior during the flag inform you?",
-  ],
-  choppy_market: [
-    "What tells you this is low-quality price action?",
-    "Would you trade this setup — why or why not?",
-    "What would have to change for this to become tradeable?",
-  ],
-};
-
-// ── Streaming helper ──────────────────────────────────────────────────────────
+const REPLAY_CATALOG = getReplayCatalog();
 
 async function streamToAPI(
   message: string,
   mode: "socratic" | "guided",
-  checklist: string[],
   history: ConversationEntry[],
-  scenarioContext: string | null,
-  isInit: boolean,
+  coachContext: string,
+  phase: PracticePhase,
   onChunk: (chunk: string) => void
 ) {
   const res = await fetch("/api/ai/practice", {
@@ -124,10 +80,9 @@ async function streamToAPI(
     body: JSON.stringify({
       message,
       mode,
-      strategyChecklist: checklist,
       conversationHistory: history.slice(-8),
-      scenarioContext: scenarioContext ?? undefined,
-      isScenarioInit: isInit,
+      coachContext,
+      phase,
     }),
   });
 
@@ -142,121 +97,285 @@ async function streamToAPI(
   }
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
 export default function PracticePage() {
-  const [scenario, setScenario] = useState<ChartScenario | null>(null);
-  const [scenarioKey, setScenarioKey] = useState(0);
-  const [selectedType, setSelectedType] = useState<ScenarioType | "">("");
+  const [dataset, setDataset] = useState<ReplayDataset | null>(null);
+  const [visibleCount, setVisibleCount] = useState(0);
+  const [selectedReplayId, setSelectedReplayId] = useState("");
+  const [chartKey, setChartKey] = useState(0);
+  const [tradePlanDraft, setTradePlanDraft] = useState<TradePlanDraft>(createEmptyTradePlanDraft);
+  const [submittedPlan, setSubmittedPlan] = useState<TradePlan | null>(null);
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
-  // Display messages (what the user sees in the chat)
   const [messages, setMessages] = useState<Message[]>([]);
-  // Full conversation history for Claude (starts with user turn)
   const [history, setHistory] = useState<ConversationEntry[]>([]);
-
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [mode, setMode] = useState<"socratic" | "guided">("socratic");
-  const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set());
-  const [isLoadingScenario, setIsLoadingScenario] = useState(false);
-  const [showTypeHint, setShowTypeHint] = useState(false);
+  const [isLoadingReplay, setIsLoadingReplay] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const initialReplayLoadedRef = useRef(false);
 
-  // ── Scroll to bottom ───────────────────────────────────────────────────────
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const containerEl = messagesContainerRef.current;
+    if (containerEl) {
+      containerEl.scrollTo({ top: containerEl.scrollHeight, behavior: "auto" });
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior: "auto" });
+    }
   }, [messages, streamingContent]);
 
-  // ── Confluence score ───────────────────────────────────────────────────────
-  const confluenceScore = Math.round((checkedItems.size / DEFAULT_CHECKLIST.length) * 100);
-  const confluenceColor =
-    confluenceScore >= 75 ? "text-green-400" : confluenceScore >= 50 ? "text-yellow-400" : "text-red-400";
-  const confluenceBg =
-    confluenceScore >= 75
-      ? "bg-green-500/10 border-green-500/20"
-      : confluenceScore >= 50
-      ? "bg-yellow-500/10 border-yellow-500/20"
-      : "bg-red-500/10 border-red-500/20";
+  const validation = useMemo(() => validateTradePlan(tradePlanDraft), [tradePlanDraft]);
 
-  // ── Load / generate a new scenario ────────────────────────────────────────
-  const loadScenario = useCallback(
-    async (type?: ScenarioType) => {
-      if (isStreaming) return;
+  const outcome = useMemo(() => {
+    if (!dataset || !submittedPlan) return null;
+    return evaluateReplayOutcome(dataset, submittedPlan, visibleCount, dataset.initialVisibleBars);
+  }, [dataset, submittedPlan, visibleCount]);
 
-      setIsLoadingScenario(true);
-      setMessages([]);
-      setHistory([]);
-      setStreamingContent("");
-      setCheckedItems(new Set());
-      setShowTypeHint(false);
-
-      const newScenario = generateScenario(type || (selectedType as ScenarioType) || undefined);
-      setScenario(newScenario);
-      setScenarioKey((k) => k + 1);
-
-      // Small delay for chart animation
-      await new Promise((r) => setTimeout(r, 120));
-
-      // Auto-trigger initial coaching from AI
-      setIsLoadingScenario(false);
-      setIsStreaming(true);
-      setStreamingContent("");
-
-      const triggerMsg =
-        "Please analyze this chart and open our coaching session with 2 targeted questions.";
-
-      let fullContent = "";
-      try {
-        await streamToAPI(
-          triggerMsg,
-          mode,
-          [],
-          [],
-          newScenario.contextSummary,
-          true,
-          (chunk) => {
-            fullContent += chunk;
-            setStreamingContent(fullContent);
-          }
-        );
-
-        // Record the init exchange in history (so future messages have proper context)
-        const initHistory: ConversationEntry[] = [
-          { role: "user", content: triggerMsg },
-          { role: "assistant", content: fullContent },
-        ];
-        setHistory(initHistory);
-        setMessages([{ role: "assistant", content: fullContent }]);
-        setStreamingContent("");
-      } catch {
-        setMessages([
-          {
-            role: "assistant",
-            content:
-              "I couldn't analyze the chart automatically. Describe what you observe and let's discuss it.",
-          },
-        ]);
-        setStreamingContent("");
-      } finally {
-        setIsStreaming(false);
-      }
-    },
-    [mode, selectedType, isStreaming]
+  const session = useMemo(
+    () => buildReplaySession(dataset, visibleCount, submittedPlan, outcome),
+    [dataset, visibleCount, submittedPlan, outcome]
   );
 
-  // ── Load initial scenario on mount ────────────────────────────────────────
-  useEffect(() => {
-    loadScenario();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const phase = useMemo(
+    () => derivePracticePhase(dataset, visibleCount, submittedPlan, outcome),
+    [dataset, visibleCount, submittedPlan, outcome]
+  );
+
+  const review = useMemo(() => {
+    if (!submittedPlan || !outcome) return null;
+    return buildPracticeReview(validation, outcome, submittedPlan);
+  }, [submittedPlan, outcome, validation]);
+
+  const reviewSummary = useMemo(() => {
+    if (!outcome || !review) return null;
+    const exitText = outcome.exitPrice !== null ? formatReplayPrice(outcome.exitPrice) : "n/a";
+    return `${review.summary} Resolution: ${outcome.resolution}. Exit ${exitText}. Realized ${outcome.realizedR ?? "n/a"}R.`;
+  }, [outcome, review]);
+
+  const quickPrompts = useMemo(() => {
+    if (phase === "planning") {
+      return [
+        "What is the visible structure here?",
+        "What would invalidate a long idea?",
+        "What would make this a no-trade?",
+        "What am I missing before I commit?",
+      ];
+    }
+
+    if (phase === "submitted" || phase === "replay") {
+      return [
+        "Does my stop fit the visible structure?",
+        "What would confirm this thesis as bars reveal?",
+        "Where is the biggest weakness in this plan?",
+        "What should I watch without changing the trade?",
+      ];
+    }
+
+    return [
+      "Was this still a good trade if it lost?",
+      "What should I journal from this replay?",
+      "Where did my process hold up well?",
+      "How would you critique the thesis after the reveal?",
+    ];
+  }, [phase]);
+
+  const appendLocalAssistant = useCallback((content: string) => {
+    setMessages((prev) => [...prev, { role: "assistant", content }]);
   }, []);
 
-  // ── Send user message ──────────────────────────────────────────────────────
+  const resetReplayState = useCallback((replay: ReplayDataset) => {
+    setVisibleCount(replay.initialVisibleBars);
+    setTradePlanDraft(createEmptyTradePlanDraft());
+    setSubmittedPlan(null);
+    setAttemptedSubmit(false);
+    setMessages([
+      {
+        role: "assistant",
+        content:
+          "Replay ready. Study the visible bars first, then lock a direction, entry, stop, target, risk, confidence, and thesis before revealing the future.",
+      },
+    ]);
+    setHistory([]);
+    setInput("");
+    setStreamingContent("");
+  }, []);
+
+  const loadReplay = useCallback(
+    async (explicitReplay?: ReplayDataset | null) => {
+      // #region agent log
+      fetch("http://127.0.0.1:7883/ingest/6e535b12-e880-4e68-8fef-78d19b71341d", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "efaa0c" },
+        body: JSON.stringify({
+          sessionId: "efaa0c",
+          runId: "initial-debug",
+          hypothesisId: "H2",
+          location: "src/app/practice/page.tsx:loadReplay:start",
+          message: "loadReplay invoked",
+          data: {
+            explicitReplayId: explicitReplay?.id ?? null,
+            currentDatasetId: dataset?.id ?? null,
+            isStreaming,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+      if (isStreaming) return;
+
+      setIsLoadingReplay(true);
+      const replay = explicitReplay ?? getRandomReplayChoice(dataset?.id);
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      // #region agent log
+      fetch("http://127.0.0.1:7883/ingest/6e535b12-e880-4e68-8fef-78d19b71341d", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "efaa0c" },
+        body: JSON.stringify({
+          sessionId: "efaa0c",
+          runId: "initial-debug",
+          hypothesisId: "H3",
+          location: "src/app/practice/page.tsx:loadReplay:chosen",
+          message: "loadReplay selected replay",
+          data: {
+            explicitReplayProvided: Boolean(explicitReplay),
+            chosenReplayId: replay.id,
+            previousDatasetId: dataset?.id ?? null,
+            sameAsPrevious: replay.id === dataset?.id,
+          },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+      setDataset(replay);
+      setSelectedReplayId(replay.id);
+      setChartKey((prev) => prev + 1);
+      resetReplayState(replay);
+      setIsLoadingReplay(false);
+    },
+    [dataset?.id, isStreaming, resetReplayState]
+  );
+
+  useEffect(() => {
+    if (initialReplayLoadedRef.current) {
+      return;
+    }
+
+    initialReplayLoadedRef.current = true;
+    void loadReplay();
+  }, [loadReplay]);
+
+  useEffect(() => {
+    // #region agent log
+    fetch("http://127.0.0.1:7883/ingest/6e535b12-e880-4e68-8fef-78d19b71341d", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "efaa0c" },
+      body: JSON.stringify({
+        sessionId: "efaa0c",
+        runId: "initial-debug",
+        hypothesisId: "H5",
+        location: "src/app/practice/page.tsx:mount",
+        message: "Practice page mounted with client description/version",
+        data: {
+          pageDescription:
+            "Work through historical ES futures replays with only the visible bars on screen. Lock a trade plan first, then reveal what the market actually did and review both your process and the outcome.",
+          replayCatalogIds: REPLAY_CATALOG.map((item) => item.id),
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }, []);
+
+  useEffect(() => {
+    // #region agent log
+    fetch("http://127.0.0.1:7883/ingest/6e535b12-e880-4e68-8fef-78d19b71341d", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "efaa0c" },
+      body: JSON.stringify({
+        sessionId: "efaa0c",
+        runId: "initial-debug",
+        hypothesisId: "H4",
+        location: "src/app/practice/page.tsx:selector-state",
+        message: "Replay selector state changed",
+        data: {
+          datasetId: dataset?.id ?? null,
+          selectedReplayId,
+          isLoadingReplay,
+          isStreaming,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+  }, [dataset?.id, selectedReplayId, isLoadingReplay, isStreaming]);
+
+  const handleDraftChange = <K extends keyof TradePlanDraft>(field: K, value: TradePlanDraft[K]) => {
+    setTradePlanDraft((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmitPlan = () => {
+    setAttemptedSubmit(true);
+    const parsed = parseTradePlan(tradePlanDraft);
+    if (!parsed || !validation.valid) return;
+
+    setSubmittedPlan(parsed);
+    appendLocalAssistant(
+      "Trade plan locked. Reveal the future one step at a time and judge the quality of the original decision instead of moving your levels."
+    );
+  };
+
+  const handleResetSameReplay = () => {
+    if (!dataset) return;
+    resetReplayState(dataset);
+  };
+
+  const handleReveal = (step: number) => {
+    if (!dataset || !submittedPlan) return;
+    setVisibleCount((current) => getNextVisibleCount(dataset, current, step));
+  };
+
+  const handleRevealToEnd = () => {
+    if (!dataset || !submittedPlan) return;
+    setVisibleCount(getReplayResolutionVisibleCount(dataset, submittedPlan));
+  };
+
+  const handleLoadSelectedReplay = () => {
+    // #region agent log
+    fetch("http://127.0.0.1:7883/ingest/6e535b12-e880-4e68-8fef-78d19b71341d", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "efaa0c" },
+      body: JSON.stringify({
+        sessionId: "efaa0c",
+        runId: "post-fix",
+        hypothesisId: "H2",
+        location: "src/app/practice/page.tsx:handleLoadSelectedReplay",
+        message: "New Replay button pressed",
+        data: {
+          selectedReplayId,
+          currentDatasetId: dataset?.id ?? null,
+          mode: "random-excluding-current",
+          isLoadingReplay,
+          isStreaming,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+    void loadReplay();
+  };
+
+  const coachContext = useMemo(() => {
+    if (!dataset) return "";
+    return buildReplayCoachContext(dataset, visibleCount, phase, submittedPlan, reviewSummary);
+  }, [dataset, visibleCount, phase, submittedPlan, reviewSummary]);
+
   const handleSend = async () => {
     const userMsg = input.trim();
-    if (!userMsg || isStreaming || !scenario) return;
+    if (!userMsg || isStreaming || !dataset || !coachContext) return;
 
     setInput("");
     setIsStreaming(true);
@@ -264,8 +383,6 @@ export default function PracticePage() {
 
     const newDisplay: Message[] = [...messages, { role: "user", content: userMsg }];
     setMessages(newDisplay);
-
-    // Build history for API: existing history + current user message
     const apiHistory: ConversationEntry[] = [...history, { role: "user", content: userMsg }];
 
     let fullContent = "";
@@ -273,28 +390,26 @@ export default function PracticePage() {
       await streamToAPI(
         userMsg,
         mode,
-        DEFAULT_CHECKLIST.filter((_, i) => checkedItems.has(i)),
-        // Pass history WITHOUT the current message (the handler appends it)
         apiHistory.slice(0, -1),
-        scenario.contextSummary,
-        false,
+        coachContext,
+        phase,
         (chunk) => {
           fullContent += chunk;
           setStreamingContent(fullContent);
         }
       );
 
-      const newHistory: ConversationEntry[] = [
-        ...apiHistory,
-        { role: "assistant", content: fullContent },
-      ];
+      const newHistory: ConversationEntry[] = [...apiHistory, { role: "assistant", content: fullContent }];
       setHistory(newHistory);
       setMessages([...newDisplay, { role: "assistant", content: fullContent }]);
       setStreamingContent("");
     } catch {
       setMessages([
         ...newDisplay,
-        { role: "assistant", content: "Connection error. Please check your API key." },
+        {
+          role: "assistant",
+          content: "The coach is unavailable right now. You can still continue the replay and review the setup manually.",
+        },
       ]);
       setStreamingContent("");
     } finally {
@@ -302,18 +417,13 @@ export default function PracticePage() {
     }
   };
 
-  const toggleCheck = (i: number) => {
-    const next = new Set(checkedItems);
-    if (next.has(i)) next.delete(i);
-    else next.add(i);
-    setCheckedItems(next);
-  };
+  const replaySummary = dataset
+    ? `${dataset.sessionLabel} · ${dataset.replaySourceLabel} · ${visibleCount}/${dataset.bars.length} bars visible`
+    : "Loading replay...";
+  const canReplay = Boolean(dataset && submittedPlan);
+  const rewardRiskLabel = validation.rewardRisk !== null ? `${validation.rewardRisk.toFixed(2)}R` : "n/a";
+  const revealedBars = outcome?.barsRevealed ?? 0;
 
-  // ── Scenario metadata ──────────────────────────────────────────────────────
-  const scenarioMeta = scenario ? SCENARIO_META[scenario.type] : null;
-  const keyQuestions = scenario ? SCENARIO_KEY_QUESTIONS[scenario.type] : [];
-
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="page-shell">
       <Navbar />
@@ -322,73 +432,89 @@ export default function PracticePage() {
         <div className="page-container">
           <PageHeader
             kicker="Deliberate practice"
-            title="Chart Practice"
-            description="Analyze AI-generated market scenarios inside a calmer workspace where the chart, checklist, and coaching prompts support your decision process without competing for attention."
+            title="Replay Practice"
+            description="Work through historical ES futures replays with only the visible bars on screen. Lock a trade plan first, then reveal what the market actually did and review both your process and the outcome."
           />
 
-          <div className="grid lg:grid-cols-3 gap-6">
-
-            {/* ── LEFT: Chart + AI Coach ─────────────────────────────────── */}
-            <div className="lg:col-span-2 space-y-5">
-
-              {/* Chart Card */}
+          <div className="grid items-start gap-6 lg:grid-cols-3">
+            <div className="space-y-5 lg:col-span-2">
               <GlowCard className="overflow-hidden" glowColor="blue">
-                {/* Scenario controls bar */}
-                <div className="px-5 pt-4 pb-3 flex flex-wrap items-center justify-between gap-3 border-b border-white/10">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {scenario && (
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 pb-3 pt-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {dataset ? (
                       <>
-                        <span className="text-white font-bold text-sm">{scenario.symbol}</span>
-                        <Badge variant="blue" size="sm">{scenario.timeframe}</Badge>
-                        <Badge variant="outline" size="sm">{scenario.assetType}</Badge>
-                        {scenarioMeta && (
-                          <Badge
-                            variant={DIFFICULTY_COLORS[scenario.difficulty]}
-                            size="sm"
-                          >
-                            {scenario.difficulty}
-                          </Badge>
-                        )}
+                        <span className="text-sm font-bold text-white">{dataset.symbol}</span>
+                        <Badge variant="blue" size="sm">{dataset.timeframe}</Badge>
+                        <Badge variant="outline" size="sm">{dataset.assetType}</Badge>
+                        <Badge variant={DIFFICULTY_COLORS[dataset.difficulty]} size="sm">
+                          {dataset.difficulty}
+                        </Badge>
                       </>
+                    ) : (
+                      <span className="text-sm text-zinc-500">Loading replay...</span>
                     )}
-                    {!scenario && <span className="text-gray-500 text-sm">Loading...</span>}
                   </div>
 
                   <div className="flex items-center gap-2">
-                    {/* Scenario type selector */}
                     <div className="relative">
                       <select
-                        value={selectedType}
-                        onChange={(e) => setSelectedType(e.target.value as ScenarioType | "")}
-                        disabled={isStreaming || isLoadingScenario}
-                        className="appearance-none bg-white/5 border border-white/10 rounded-lg pl-3 pr-8 py-1.5 text-gray-300 text-xs focus:outline-none focus:border-blue-400/40 disabled:opacity-50 cursor-pointer"
+                        value={selectedReplayId}
+                        onChange={(e) => {
+                          const nextReplayId = e.target.value;
+                          const selectedReplay = getReplayChoiceById(nextReplayId);
+                          // #region agent log
+                          fetch("http://127.0.0.1:7883/ingest/6e535b12-e880-4e68-8fef-78d19b71341d", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "efaa0c" },
+                            body: JSON.stringify({
+                              sessionId: "efaa0c",
+                              runId: "post-fix",
+                              hypothesisId: "H1",
+                              location: "src/app/practice/page.tsx:select:onChange",
+                              message: "Replay dropdown changed",
+                              data: {
+                                nextReplayId,
+                                resolvedReplayId: selectedReplay?.id ?? null,
+                                currentSelectedReplayId: selectedReplayId,
+                                currentDatasetId: dataset?.id ?? null,
+                                isLoadingReplay,
+                                isStreaming,
+                              },
+                              timestamp: Date.now(),
+                            }),
+                          }).catch(() => {});
+                          // #endregion
+                          setSelectedReplayId(nextReplayId);
+                          if (selectedReplay) {
+                            void loadReplay(selectedReplay);
+                          }
+                        }}
+                        disabled={isLoadingReplay || isStreaming}
+                        className="cursor-pointer appearance-none rounded-lg border border-white/10 bg-white/5 py-1.5 pl-3 pr-8 text-xs text-zinc-300 focus:border-blue-400/40 focus:outline-none disabled:opacity-50"
                       >
-                        <option value="">Random Scenario</option>
-                        {SCENARIO_TYPES.map((t) => (
-                          <option key={t} value={t}>
-                            {SCENARIO_META[t].label}
+                        {REPLAY_CATALOG.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.label}
                           </option>
                         ))}
                       </select>
-                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+                      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-zinc-400" />
                     </div>
 
-                    {/* New Scenario button */}
                     <button
-                      onClick={() => loadScenario(selectedType as ScenarioType | undefined)}
-                      disabled={isStreaming || isLoadingScenario}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/20 border border-blue-500/30 text-blue-400 text-xs font-medium rounded-lg hover:bg-blue-500/30 disabled:opacity-40 transition-all"
+                      onClick={handleLoadSelectedReplay}
+                      disabled={isLoadingReplay || isStreaming}
+                      className="flex items-center gap-1.5 rounded-lg border border-blue-500/30 bg-blue-500/20 px-3 py-1.5 text-xs font-medium text-blue-400 transition-all hover:bg-blue-500/30 disabled:opacity-40"
                     >
-                      <Shuffle className="w-3.5 h-3.5" />
-                      New Chart
+                      <Shuffle className="h-3.5 w-3.5" />
+                      New Replay
                     </button>
                   </div>
                 </div>
 
-                {/* Chart area */}
-                <div className="relative" style={{ height: 370 }}>
+                <div className="relative" style={{ height: 390 }}>
                   <AnimatePresence mode="wait">
-                    {isLoadingScenario ? (
+                    {isLoadingReplay ? (
                       <motion.div
                         key="loading"
                         initial={{ opacity: 0 }}
@@ -397,440 +523,472 @@ export default function PracticePage() {
                         className="absolute inset-0 flex items-center justify-center bg-[#070A12]"
                       >
                         <div className="text-center">
-                          <div className="flex gap-1.5 justify-center mb-3">
-                            {[0, 1, 2].map((i) => (
+                          <div className="mb-3 flex justify-center gap-1.5">
+                            {[0, 1, 2].map((index) => (
                               <motion.div
-                                key={i}
-                                className="w-2 h-2 bg-blue-400 rounded-full"
+                                key={index}
+                                className="h-2 w-2 rounded-full bg-blue-400"
                                 animate={{ y: [0, -6, 0] }}
-                                transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
+                                transition={{ duration: 0.6, repeat: Infinity, delay: index * 0.15 }}
                               />
                             ))}
                           </div>
-                          <p className="text-gray-500 text-sm">Generating scenario...</p>
+                          <p className="text-sm text-zinc-500">Loading replay session...</p>
                         </div>
                       </motion.div>
-                    ) : scenario ? (
+                    ) : dataset ? (
                       <motion.div
-                        key={`chart-${scenarioKey}`}
+                        key={`chart-${chartKey}`}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        transition={{ duration: 0.4 }}
+                        transition={{ duration: 0.35 }}
                         className="absolute inset-0"
                       >
-                        <CandlestickChart scenario={scenario} />
+                        <CandlestickChart
+                          dataset={dataset}
+                          visibleCount={session?.visibleCount ?? visibleCount}
+                          tradePlan={submittedPlan}
+                          outcome={outcome}
+                          phase={phase}
+                        />
                       </motion.div>
                     ) : null}
                   </AnimatePresence>
                 </div>
 
-                {/* Scenario type reveal */}
-                <div className="px-5 py-3 border-t border-white/10 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {scenario && scenarioMeta && (
-                      <>
-                        <button
-                          onClick={() => setShowTypeHint((v) => !v)}
-                          className="text-xs text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1"
-                        >
-                          <Eye className="w-3 h-3" />
-                          {showTypeHint ? "Hide type" : "Reveal scenario type"}
-                        </button>
-                        {showTypeHint && (
-                          <motion.span
-                            initial={{ opacity: 0, x: -4 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="text-xs text-cyan-400 font-medium"
-                          >
-                            {scenarioMeta.label}
-                          </motion.span>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-gray-600">
-                    <span>70 candles</span>
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-5 py-3">
+                    <div className="text-xs text-zinc-500">{replaySummary}</div>
+                  <div className="flex items-center gap-2 text-xs text-zinc-600">
+                    <span>Hidden future</span>
                     <span>·</span>
                     <span>EMA20 + EMA50</span>
                     <span>·</span>
-                    <span>S/R Levels</span>
+                    <span>Trade overlays</span>
                     <span>·</span>
                     <span>Volume</span>
                   </div>
                 </div>
               </GlowCard>
 
-              {/* AI Coach Panel */}
-              <GlowCard className="flex flex-col h-[500px]" glowColor="purple">
+              <GlowCard className="p-5" glowColor="none">
+                <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
+                  <Layers className="h-4 w-4 text-blue-400" />
+                  Replay Context
+                </h3>
 
-                {/* Mode selector + header */}
-                <div className="p-4 border-b border-white/10 flex-shrink-0">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Brain className="w-5 h-5 text-purple-400" />
-                      <span className="text-white font-bold">AI Coach</span>
-                      {isStreaming && (
-                        <span className="text-xs text-purple-400/60 animate-pulse">Analyzing...</span>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center bg-white/5 border border-white/10 rounded-lg p-1 gap-1">
-                        <button
-                          onClick={() => setMode("socratic")}
-                          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                            mode === "socratic"
-                              ? "bg-purple-500/30 border border-purple-500/40 text-purple-400"
-                              : "text-gray-500 hover:text-gray-300"
-                          }`}
-                        >
-                          Socratic
-                        </button>
-                        <button
-                          onClick={() => setMode("guided")}
-                          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                            mode === "guided"
-                              ? "bg-blue-500/30 border border-blue-500/40 text-blue-400"
-                              : "text-gray-500 hover:text-gray-300"
-                          }`}
-                        >
-                          Guided
-                        </button>
+                {dataset ? (
+                  <div className="space-y-3">
+                    <InfoRow label="Replay" value={dataset.title} />
+                    <InfoRow label="Source" value={dataset.replaySourceLabel} />
+                    <InfoRow label="Venue" value={dataset.venue} />
+                    <InfoRow label="Session" value={dataset.sessionLabel} />
+                    <InfoRow label="Focus" value={dataset.setupFocus} />
+                    <div className="border-t border-white/10 pt-2">
+                      <p className="mb-2 text-xs text-zinc-500">Key reference levels</p>
+                      <div className="space-y-1.5">
+                        {dataset.levels.map((level) => (
+                          <div key={level.label} className="flex items-center justify-between gap-3">
+                            <span className="text-xs text-zinc-300">{level.label}</span>
+                            <span className="font-mono text-xs text-zinc-500">{formatReplayPrice(level.price)}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                      <p className="text-xs leading-5 text-zinc-500">{dataset.brief}</p>
+                    </div>
                   </div>
-                  <p className="text-gray-600 text-xs mt-1.5">
+                ) : (
+                  <div className="space-y-2">
+                    {[1, 2, 3].map((index) => (
+                      <div key={index} className="h-4 animate-pulse rounded bg-white/5" />
+                    ))}
+                  </div>
+                )}
+              </GlowCard>
+
+              <GlowCard className="flex h-[550px] min-h-0 flex-col" glowColor="purple">
+                <div className="flex-shrink-0 border-b border-white/10 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Brain className="h-5 w-5 text-purple-400" />
+                      <span className="font-bold text-white">AI Coach</span>
+                      {isStreaming ? <span className="animate-pulse text-xs text-purple-400/60">Thinking...</span> : null}
+                    </div>
+
+                    <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
+                      <button
+                        onClick={() => setMode("socratic")}
+                        className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                          mode === "socratic"
+                            ? "border border-purple-500/40 bg-purple-500/30 text-purple-400"
+                            : "text-zinc-500 hover:text-zinc-300"
+                        }`}
+                      >
+                        Socratic
+                      </button>
+                      <button
+                        onClick={() => setMode("guided")}
+                        className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                          mode === "guided"
+                            ? "border border-blue-500/40 bg-blue-500/30 text-blue-400"
+                            : "text-zinc-500 hover:text-zinc-300"
+                        }`}
+                      >
+                        Guided
+                      </button>
+                    </div>
+                  </div>
+
+                  <p className="mt-1.5 text-xs text-zinc-600">
                     {mode === "socratic"
-                      ? "Socratic: The coach only asks questions — guiding you to discover the analysis yourself."
-                      : "Guided: The coach explains, teaches, and walks through the chart structure with you."}
+                      ? "The coach only asks process questions and will not give you direction, targets, or hidden-future hints."
+                      : "The coach can explain visible structure and critique your process, but it will not provide trade instructions or reveal the outcome."}
                   </p>
                 </div>
 
-                {/* Messages area */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
-
-                  {/* Empty state */}
-                  {messages.length === 0 && !streamingContent && !isLoadingScenario && (
-                    <div className="text-center py-8">
-                      <Brain className="w-8 h-8 text-purple-400/20 mx-auto mb-3" />
-                      <p className="text-gray-600 text-sm">
-                        Waiting for chart to load...
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Loading scenario */}
-                  {(isLoadingScenario || (isStreaming && messages.length === 0 && !streamingContent)) && (
-                    <div className="flex justify-start">
-                      <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3">
-                        <div className="flex gap-1.5">
-                          {[0, 1, 2].map((i) => (
-                            <motion.div
-                              key={i}
-                              className="w-1.5 h-1.5 bg-purple-400 rounded-full"
-                              animate={{ y: [0, -4, 0] }}
-                              transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Conversation messages */}
-                  {messages.map((msg, i) => (
-                    <div
-                      key={i}
-                      className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                    >
+                <div ref={messagesContainerRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+                  {messages.map((msg, index) => (
+                    <div key={`${msg.role}-${index}`} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                       <div
                         className={`max-w-[88%] rounded-xl px-3.5 py-2.5 text-sm ${
                           msg.role === "user"
-                            ? "bg-cyan-400/15 text-white border border-cyan-400/20"
-                            : "bg-white/5 border border-white/10"
+                            ? "border border-cyan-400/20 bg-cyan-400/15 text-white"
+                            : "border border-white/10 bg-white/5"
                         }`}
                       >
-                        {msg.role === "assistant" ? (
-                          <StreamingTextFormatted text={msg.content} />
-                        ) : (
-                          <p className="text-sm">{msg.content}</p>
-                        )}
+                        {msg.role === "assistant" ? <StreamingTextFormatted text={msg.content} /> : <p>{msg.content}</p>}
                       </div>
                     </div>
                   ))}
 
-                  {/* Live streaming */}
-                  {isStreaming && streamingContent && (
+                  {isStreaming && streamingContent ? (
                     <div className="flex justify-start">
-                      <div className="max-w-[88%] bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5">
+                      <div className="max-w-[88%] rounded-xl border border-white/10 bg-white/5 px-3.5 py-2.5">
                         <StreamingTextFormatted text={streamingContent} isStreaming />
                       </div>
                     </div>
-                  )}
+                  ) : null}
 
-                  {/* Typing indicator (after init, before first chunk arrives) */}
-                  {isStreaming && !streamingContent && messages.length > 0 && (
+                  {isStreaming && !streamingContent ? (
                     <div className="flex justify-start">
-                      <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+                      <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
                         <div className="flex gap-1.5">
-                          {[0, 1, 2].map((i) => (
+                          {[0, 1, 2].map((index) => (
                             <motion.div
-                              key={i}
-                              className="w-1.5 h-1.5 bg-purple-400 rounded-full"
+                              key={index}
+                              className="h-1.5 w-1.5 rounded-full bg-purple-400"
                               animate={{ y: [0, -4, 0] }}
-                              transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
+                              transition={{ duration: 0.6, repeat: Infinity, delay: index * 0.15 }}
                             />
                           ))}
                         </div>
                       </div>
                     </div>
-                  )}
+                  ) : null}
 
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Quick prompts (shown when conversation is empty or just started) */}
-                {messages.length === 1 && !isStreaming && scenario && (
-                  <div className="px-4 pb-2 flex-shrink-0">
-                    <p className="text-gray-600 text-xs mb-2">Quick responses:</p>
+                {!isStreaming ? (
+                  <div className="flex-shrink-0 px-4 pb-2">
+                    <p className="mb-2 text-xs text-zinc-600">Quick prompts</p>
                     <div className="flex flex-wrap gap-1.5">
-                      {[
-                        "I think this is a trending market",
-                        "I see a possible breakout setup",
-                        "The volume looks unusual here",
-                        "I'm not sure about the direction",
-                      ].map((p) => (
+                      {quickPrompts.map((prompt) => (
                         <button
-                          key={p}
-                          onClick={() => setInput(p)}
-                          className="text-xs px-2.5 py-1 bg-white/5 border border-white/10 text-gray-400 rounded-lg hover:border-purple-500/30 hover:text-purple-300 transition-all"
+                          key={prompt}
+                          onClick={() => setInput(prompt)}
+                          className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-zinc-400 transition-all hover:border-purple-500/30 hover:text-purple-300"
                         >
-                          {p}
+                          {prompt}
                         </button>
                       ))}
                     </div>
                   </div>
-                )}
+                ) : null}
 
-                {/* Input */}
-                <div className="p-3 border-t border-white/10 flex-shrink-0">
+                <div className="flex-shrink-0 border-t border-white/10 p-3">
                   <div className="flex gap-2">
                     <input
                       ref={inputRef}
                       type="text"
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
-                      onKeyDown={(e) =>
-                        e.key === "Enter" && !e.shiftKey && handleSend()
-                      }
-                      placeholder={
-                        isStreaming
-                          ? "Coach is analyzing..."
-                          : "Describe what you observe on the chart..."
-                      }
-                      disabled={isStreaming || !scenario}
-                      className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-white placeholder-gray-600 text-sm focus:outline-none focus:border-purple-400/40 disabled:opacity-50 transition-all"
+                      onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && void handleSend()}
+                      placeholder={isStreaming ? "Coach is responding..." : "Ask about structure, invalidation, or your process..."}
+                      disabled={isStreaming || !dataset}
+                      className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:border-purple-400/40 focus:outline-none disabled:opacity-50"
                     />
                     <button
-                      onClick={handleSend}
-                      disabled={!input.trim() || isStreaming || !scenario}
-                      className="w-10 h-10 bg-purple-500/20 border border-purple-500/30 text-purple-400 rounded-lg flex items-center justify-center hover:bg-purple-500/30 disabled:opacity-40 transition-all flex-shrink-0"
+                      onClick={() => void handleSend()}
+                      disabled={!input.trim() || isStreaming || !dataset}
+                      className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-purple-500/30 bg-purple-500/20 text-purple-400 transition-all hover:bg-purple-500/30 disabled:opacity-40"
                     >
-                      <Send className="w-4 h-4" />
+                      <Send className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
               </GlowCard>
             </div>
 
-            {/* ── RIGHT SIDEBAR ─────────────────────────────────────────── */}
-            <div className="space-y-5">
+            <div>
+              <div className="space-y-5">
+                <GlowCard className="p-5" glowColor="none">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
+                      <Lock className="h-4 w-4 text-cyan-400" />
+                      Trade Ticket
+                    </h3>
+                    {submittedPlan ? (
+                      <span className="text-xs font-medium text-green-400">Locked</span>
+                    ) : (
+                      <span className="text-xs text-zinc-500">Required before replay</span>
+                    )}
+                  </div>
 
-              {/* Scenario Info */}
+                  <div className="space-y-4">
+                    <div>
+                      <p className="mb-2 text-xs text-zinc-500">Direction</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { value: "long", label: "Long" },
+                          { value: "short", label: "Short" },
+                        ].map((item) => (
+                          <button
+                            key={item.value}
+                            onClick={() => handleDraftChange("direction", item.value as TradePlanDraft["direction"])}
+                            disabled={Boolean(submittedPlan)}
+                            className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition-all ${
+                              tradePlanDraft.direction === item.value
+                                ? "border-cyan-400/40 bg-cyan-400/15 text-white"
+                                : "border-white/10 bg-white/5 text-zinc-400 hover:border-white/20 hover:text-white"
+                            } disabled:cursor-not-allowed disabled:opacity-70`}
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                      {attemptedSubmit && validation.errors.direction ? (
+                        <p className="mt-1.5 text-xs text-red-400">{validation.errors.direction}</p>
+                      ) : null}
+                    </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <TradeInput
+                      label="Entry"
+                      value={tradePlanDraft.entry}
+                      onChange={(value) => handleDraftChange("entry", value)}
+                      disabled={Boolean(submittedPlan)}
+                      error={attemptedSubmit ? validation.errors.entry : undefined}
+                    />
+                    <TradeInput
+                      label="Stop loss"
+                      value={tradePlanDraft.stopLoss}
+                      onChange={(value) => handleDraftChange("stopLoss", value)}
+                      disabled={Boolean(submittedPlan)}
+                      error={attemptedSubmit ? validation.errors.stopLoss : undefined}
+                    />
+                    <TradeInput
+                      label="Take profit"
+                      value={tradePlanDraft.takeProfit}
+                      onChange={(value) => handleDraftChange("takeProfit", value)}
+                      disabled={Boolean(submittedPlan)}
+                      error={attemptedSubmit ? validation.errors.takeProfit : undefined}
+                    />
+                    <TradeInput
+                      label="Risk %"
+                      value={tradePlanDraft.riskPercent}
+                      onChange={(value) => handleDraftChange("riskPercent", value)}
+                      disabled={Boolean(submittedPlan)}
+                      error={attemptedSubmit ? validation.errors.riskPercent : undefined}
+                    />
+                  </div>
+
+                  <div>
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="text-xs text-zinc-500">Confidence</p>
+                      <span className="text-xs text-zinc-400">{tradePlanDraft.confidence}/5</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={1}
+                      max={5}
+                      step={1}
+                      value={tradePlanDraft.confidence}
+                      onChange={(e) => handleDraftChange("confidence", Number(e.target.value))}
+                      disabled={Boolean(submittedPlan)}
+                      className="w-full accent-cyan-400 disabled:opacity-60"
+                    />
+                  </div>
+
+                  <div>
+                    <p className="mb-2 text-xs text-zinc-500">Thesis</p>
+                    <textarea
+                      value={tradePlanDraft.thesis}
+                      onChange={(e) => handleDraftChange("thesis", e.target.value)}
+                      disabled={Boolean(submittedPlan)}
+                      rows={4}
+                      placeholder="Why does this trade exist? Reference visible structure, invalidation, or context."
+                      className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:border-cyan-400/40 focus:outline-none disabled:opacity-70"
+                    />
+                    {attemptedSubmit && validation.errors.thesis ? (
+                      <p className="mt-1.5 text-xs text-red-400">{validation.errors.thesis}</p>
+                    ) : null}
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-zinc-500">Reward / risk</span>
+                      <span className="font-medium text-white">{rewardRiskLabel}</span>
+                    </div>
+                    {validation.errors.form ? (
+                      <p className="mt-2 text-xs leading-5 text-amber-300/85">{validation.errors.form}</p>
+                    ) : (
+                      <p className="mt-2 text-xs leading-5 text-zinc-500">
+                        Keep the plan mechanically valid before you reveal any future bars.
+                      </p>
+                    )}
+                  </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSubmitPlan}
+                        disabled={Boolean(submittedPlan)}
+                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-zinc-950 transition-colors hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <Lock className="h-4 w-4" />
+                        Lock trade plan
+                      </button>
+                      <button
+                        onClick={handleResetSameReplay}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/8"
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        Reset
+                      </button>
+                    </div>
+                  </div>
+                </GlowCard>
+
               <GlowCard className="p-5" glowColor="none">
-                <h3 className="text-white font-semibold text-sm mb-4 flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-blue-400" />
-                  Scenario Info
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
+                    <Play className="h-4 w-4 text-blue-400" />
+                    Replay Controls
+                  </h3>
+                  <span className="text-xs text-zinc-500">{revealedBars} bars revealed</span>
+                </div>
+
+                <div className="space-y-3">
+                  <button
+                    onClick={() => handleReveal(1)}
+                    disabled={!canReplay || phase === "review"}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/8 disabled:opacity-40"
+                  >
+                    <Play className="h-4 w-4" />
+                    Reveal 1 bar
+                  </button>
+                  <button
+                    onClick={() => handleReveal(5)}
+                    disabled={!canReplay || phase === "review"}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/8 disabled:opacity-40"
+                  >
+                    <FastForward className="h-4 w-4" />
+                    Reveal 5 bars
+                  </button>
+                  <button
+                    onClick={handleRevealToEnd}
+                    disabled={!canReplay || phase === "review"}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-3 text-sm font-medium text-cyan-300 transition-colors hover:bg-cyan-400/15 disabled:opacity-40"
+                  >
+                    <Flag className="h-4 w-4" />
+                    Reveal to resolution
+                  </button>
+                </div>
+
+                <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3">
+                  <p className="text-xs leading-5 text-zinc-500">
+                    The plan is locked once submitted. The goal is to judge the original decision, not to move levels after the market starts printing new bars.
+                  </p>
+                </div>
+              </GlowCard>
+
+              <GlowCard className="p-5" glowColor="none">
+                <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
+                  <Trophy className="h-4 w-4 text-green-400" />
+                  Review
                 </h3>
 
-                {scenario && scenarioMeta ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500 text-xs">Type</span>
-                      <span className="text-white text-xs font-medium">{scenarioMeta.label}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500 text-xs">Difficulty</span>
-                      <Badge variant={DIFFICULTY_COLORS[scenario.difficulty]} size="sm">
-                        {scenario.difficulty}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500 text-xs">Timeframe</span>
-                      <span className="text-white text-xs">{scenario.timeframe}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500 text-xs">Instrument</span>
-                      <span className="text-white text-xs">{scenario.symbol} ({scenario.assetType})</span>
+                {submittedPlan && outcome && review ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-3">
+                      <ScorePill label="Process" value={`${review.processScore}`} tone="cyan" />
+                      <ScorePill label="Outcome" value={`${review.outcomeScore}`} tone="green" />
+                      <ScorePill label="Total" value={`${review.compositeScore}`} tone="white" />
                     </div>
 
-                    {/* S/R levels */}
-                    <div className="pt-2 border-t border-white/10">
-                      <p className="text-gray-500 text-xs mb-2">Key Levels</p>
-                      <div className="space-y-1.5">
-                        {scenario.levels.map((lvl, i) => (
-                          <div key={i} className="flex items-center justify-between">
-                            <span
-                              className={`text-xs font-medium ${
-                                lvl.type === "resistance" ? "text-red-400" : "text-green-400"
-                              }`}
-                            >
-                              {lvl.label}
-                            </span>
-                            <span className="text-gray-400 text-xs font-mono">
-                              {formatLevelPrice(lvl.price)}
-                            </span>
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                      <p className="text-sm font-medium text-white">{review.summary}</p>
+                      <div className="mt-2 space-y-1 text-xs text-zinc-400">
+                        <p>Resolution: {formatResolution(outcome.resolution)}</p>
+                        <p>Realized: {outcome.realizedR !== null ? `${outcome.realizedR}R` : "n/a"}</p>
+                        <p>MFE: {outcome.maxFavorableExcursion}R</p>
+                        <p>MAE: {outcome.maxAdverseExcursion}R</p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-500">What worked</p>
+                      <div className="space-y-2">
+                        {review.strengths.map((item) => (
+                          <div key={item} className="flex items-start gap-2 rounded-xl border border-green-500/10 bg-green-500/5 p-3">
+                            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-400" />
+                            <p className="text-xs leading-5 text-zinc-300">{item}</p>
                           </div>
                         ))}
                       </div>
                     </div>
 
-                    {/* Key coaching questions */}
-                    <div className="pt-2 border-t border-white/10">
-                      <p className="text-gray-500 text-xs mb-2">Practice Focus</p>
-                      <div className="space-y-1.5">
-                        {keyQuestions.slice(0, 2).map((q, i) => (
-                          <button
-                            key={i}
-                            onClick={() => setInput(q)}
-                            className="block w-full text-left text-xs text-gray-400 bg-white/5 border border-white/10 rounded-lg px-2.5 py-2 hover:border-purple-500/30 hover:text-purple-300 transition-all"
-                          >
-                            {q}
-                          </button>
+                    <div>
+                      <p className="mb-2 text-xs font-medium uppercase tracking-[0.18em] text-zinc-500">What to review</p>
+                      <div className="space-y-2">
+                        {review.cautions.map((item) => (
+                          <div key={item} className="flex items-start gap-2 rounded-xl border border-amber-500/10 bg-amber-500/5 p-3">
+                            <TriangleAlert className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-300" />
+                            <p className="text-xs leading-5 text-zinc-300">{item}</p>
+                          </div>
                         ))}
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="h-4 bg-white/5 rounded animate-pulse" />
-                    ))}
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-xs leading-5 text-zinc-500">
+                    Lock a trade plan and reveal the replay to see process scoring, outcome metrics, and review notes.
                   </div>
                 )}
               </GlowCard>
 
-              {/* Confluence Score */}
-              <GlowCard className={`p-5 border ${confluenceBg}`} glowColor="none">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-white font-semibold text-sm flex items-center gap-2">
-                    <Target className="w-4 h-4 text-cyan-400" />
-                    Confluence Score
+                <GlowCard className="border-red-500/20 p-5" glowColor="none">
+                  <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-red-400">
+                    <Shield className="h-4 w-4" />
+                    Risk Reminder
                   </h3>
-                  <span className={`text-2xl font-bold ${confluenceColor}`}>{confluenceScore}%</span>
-                </div>
-                <div className="w-full bg-white/10 rounded-full h-2 mb-3">
-                  <motion.div
-                    className={`h-2 rounded-full ${
-                      confluenceScore >= 75
-                        ? "bg-green-400"
-                        : confluenceScore >= 50
-                        ? "bg-yellow-400"
-                        : "bg-red-400"
-                    }`}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${confluenceScore}%` }}
-                    transition={{ duration: 0.5 }}
-                  />
-                </div>
-                <p className={`text-xs ${confluenceColor}`}>
-                  {confluenceScore >= 75
-                    ? "Strong alignment — high quality setup"
-                    : confluenceScore >= 50
-                    ? "Partial alignment — review missing factors"
-                    : confluenceScore < 25
-                    ? "Low confluence — consider sitting out"
-                    : "Building confluence — keep checking"}
-                </p>
-              </GlowCard>
-
-              {/* Strategy Checklist */}
-              <GlowCard className="p-5" glowColor="none">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-white font-semibold text-sm flex items-center gap-2">
-                    <SquareCheck className="w-4 h-4 text-cyan-400" />
-                    Strategy Checklist
-                  </h3>
-                  <button
-                    onClick={() => setCheckedItems(new Set())}
-                    className="text-gray-600 text-xs hover:text-red-400 transition-colors flex items-center gap-1"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    Reset
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  {DEFAULT_CHECKLIST.map((item, i) => (
-                    <button
-                      key={i}
-                      onClick={() => toggleCheck(i)}
-                      className={`w-full flex items-start gap-2.5 p-2.5 rounded-lg text-left transition-all ${
-                        checkedItems.has(i)
-                          ? "bg-green-500/10 border border-green-500/20"
-                          : "bg-white/5 border border-white/10 hover:border-white/20"
-                      }`}
-                    >
-                      {checkedItems.has(i) ? (
-                        <SquareCheck className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
-                      ) : (
-                        <Square className="w-4 h-4 text-gray-600 flex-shrink-0 mt-0.5" />
-                      )}
-                      <span
-                        className={`text-xs ${checkedItems.has(i) ? "text-green-400" : "text-gray-400"}`}
-                      >
-                        {item}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </GlowCard>
-
-              {/* Risk Reminder */}
-              <GlowCard className="p-5 border-red-500/20" glowColor="none">
-                <h3 className="text-red-400 font-semibold text-sm mb-3 flex items-center gap-2">
-                  <TriangleAlert className="w-4 h-4" />
-                  Risk Reminder
-                </h3>
-                <div className="space-y-2 text-xs text-gray-400">
-                  <div className="flex items-start gap-2">
-                    <Shield className="w-3 h-3 text-red-400/60 flex-shrink-0 mt-0.5" />
-                    <p>Never risk more than 1–2% per trade</p>
+                  <div className="space-y-2 text-xs text-zinc-400">
+                    <div className="flex items-start gap-2">
+                      <Gauge className="mt-0.5 h-3 w-3 flex-shrink-0 text-red-400/60" />
+                      <p>Most training reps should stay at 1% to 1.5% risk.</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Target className="mt-0.5 h-3 w-3 flex-shrink-0 text-red-400/60" />
+                      <p>Define invalidation first, then size the idea around that level.</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Flag className="mt-0.5 h-3 w-3 flex-shrink-0 text-red-400/60" />
+                      <p>Use replay to practice discipline, not hindsight adjustments.</p>
+                    </div>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <Shield className="w-3 h-3 text-red-400/60 flex-shrink-0 mt-0.5" />
-                    <p>Place your stop BEFORE sizing the position</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Shield className="w-3 h-3 text-red-400/60 flex-shrink-0 mt-0.5" />
-                    <p>If 2:1 R:R isn&apos;t available, skip the trade</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Shield className="w-3 h-3 text-red-400/60 flex-shrink-0 mt-0.5" />
-                    <p>Stop trading if you hit your daily loss limit</p>
-                  </div>
-                </div>
-              </GlowCard>
-
-              {/* Next chart shortcut */}
-              <button
-                onClick={() => loadScenario()}
-                disabled={isStreaming || isLoadingScenario}
-                className="w-full py-3 text-sm text-cyan-400 border border-cyan-400/20 rounded-xl hover:bg-cyan-400/5 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-              >
-                <Shuffle className="w-4 h-4" />
-                New Random Scenario
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
+                </GlowCard>
+              </div>
             </div>
           </div>
         </div>
@@ -841,12 +999,77 @@ export default function PracticePage() {
   );
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function formatLevelPrice(p: number): string {
-  if (p >= 10000) return p.toFixed(0);
-  if (p >= 100) return p.toFixed(2);
-  if (p >= 1) return p.toFixed(3);
-  return p.toFixed(4);
+function TradeInput({
+  label,
+  value,
+  onChange,
+  disabled,
+  error,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  disabled: boolean;
+  error?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-xs text-zinc-500">{label}</span>
+      <input
+        type="number"
+        step="any"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white focus:border-cyan-400/40 focus:outline-none disabled:opacity-70"
+      />
+      {error ? <span className="mt-1.5 block text-xs text-red-400">{error}</span> : null}
+    </label>
+  );
 }
 
+function ScorePill({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone: "cyan" | "green" | "white";
+}) {
+  const toneClasses =
+    tone === "cyan"
+      ? "border-cyan-400/15 bg-cyan-400/8 text-cyan-300"
+      : tone === "green"
+        ? "border-green-400/15 bg-green-400/8 text-green-300"
+        : "border-white/10 bg-white/5 text-white";
+
+  return (
+    <div className={`rounded-xl border p-3 text-center ${toneClasses}`}>
+      <div className="text-[11px] uppercase tracking-[0.18em]">{label}</div>
+      <div className="mt-1 text-xl font-semibold">{value}</div>
+    </div>
+  );
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-xs text-zinc-500">{label}</span>
+      <span className="text-right text-xs text-white">{value}</span>
+    </div>
+  );
+}
+
+function formatResolution(resolution: ReplayOutcome["resolution"]) {
+  switch (resolution) {
+    case "target_hit":
+      return "Target hit";
+    case "stop_hit":
+      return "Stop hit";
+    case "session_end":
+      return "Session ended before target or stop";
+    default:
+      return "Replay still open";
+  }
+}

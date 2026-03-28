@@ -68,7 +68,7 @@ export function PremiumLandingHero() {
         <div className="pointer-events-auto w-full">
           <MotionWrap delay={0} y={16} duration={0.55}>
             <p className="page-kicker mx-auto">
-              TradeMentor AI
+              Lumen
             </p>
           </MotionWrap>
 

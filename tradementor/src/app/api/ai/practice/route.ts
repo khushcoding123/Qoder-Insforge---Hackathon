@@ -8,10 +8,9 @@ export async function POST(request: Request) {
     const {
       message,
       mode,
-      strategyChecklist,
       conversationHistory,
-      scenarioContext,
-      isScenarioInit,
+      coachContext,
+      phase,
     } = body;
 
     if (!message || typeof message !== "string") {
@@ -38,10 +37,9 @@ export async function POST(request: Request) {
     const stream = await createPracticeStream(
       message,
       mode as "socratic" | "guided",
-      strategyChecklist,
       conversationHistory,
-      typeof scenarioContext === "string" ? scenarioContext : undefined,
-      isScenarioInit === true
+      typeof coachContext === "string" ? coachContext : undefined,
+      typeof phase === "string" ? phase : undefined
     );
 
     const readableStream = new ReadableStream({
