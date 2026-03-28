@@ -23,6 +23,7 @@ import { GlowCard } from "@/components/ui/GlowCard";
 import { Badge } from "@/components/ui/Badge";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { ScrollAnimatedText } from "@/components/ui/AnimatedText";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { mockUserProgress } from "@/lib/data/progress";
 import { lessons } from "@/lib/data/lessons";
 import { mockJournalEntries } from "@/lib/data/journal";
@@ -63,29 +64,99 @@ function DashboardContent() {
   const recommendedLessons = lessons
     .filter((l) => !progress.completedLessons.includes(l.id))
     .slice(0, 3);
+  const focusLesson = recommendedLessons[0] ?? lessons[0];
+  const overallProgress = Math.round((progress.completedLessons.length / progress.totalLessonsAvailable) * 100);
 
   const categoryEntries = Object.entries(progress.categoryProgress);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] flex flex-col">
+    <div className="page-shell">
       <Navbar />
 
-      <main className="flex-1 pt-24 pb-12 px-4">
-        <div className="max-w-7xl mx-auto">
+      <main className="page-main">
+        <div className="page-container">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <PageHeader
+              kicker="Progress overview"
+              title={
+                <>
+                  Welcome back, {displayName}
+                </>
+              }
+              description={`Last active ${new Date(progress.lastActive).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}. Your next best move is to keep the loop going with one high-quality lesson, one deliberate practice session, or one journal reflection.`}
+            />
+          </motion.div>
 
-          {/* Welcome Header */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
+            transition={{ delay: 0.08 }}
+            className="mb-8 grid gap-5 lg:grid-cols-[1.35fr_0.85fr]"
           >
-            <p className="text-gray-400 text-sm mb-1">Welcome back,</p>
-            <h1 className="text-3xl font-bold text-white">
-              {displayName} <span className="text-cyan-400 text-xl">👋</span>
-            </h1>
-            <p className="text-gray-500 text-sm mt-1">
-              Last active: {new Date(progress.lastActive).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-            </p>
+            <GlowCard className="p-6" glowColor="cyan">
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div>
+                  <p className="page-kicker">Next best action</p>
+                  <h2 className="mt-4 text-2xl font-semibold tracking-tight text-white">
+                    Continue building your edge with {focusLesson.title}
+                  </h2>
+                  <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-400">
+                    This lesson best fits your current learning loop and keeps momentum high without overwhelming your next session.
+                  </p>
+                </div>
+                <ProgressRing percentage={overallProgress} size={72} strokeWidth={6} label="Progress" animated />
+              </div>
+              <div className="mb-5 flex flex-wrap items-center gap-2">
+                <Badge variant="cyan">{focusLesson.category}</Badge>
+                <Badge variant={focusLesson.difficulty === "Beginner" ? "green" : focusLesson.difficulty === "Intermediate" ? "yellow" : "red"}>
+                  {focusLesson.difficulty}
+                </Badge>
+                <span className="text-xs text-zinc-500">{focusLesson.duration} min lesson</span>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Link
+                  href={`/learn/${focusLesson.id}`}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-zinc-950 transition-colors hover:bg-zinc-100"
+                >
+                  Resume lesson
+                  <ChevronRight className="h-4 w-4" />
+                </Link>
+                <Link
+                  href="/practice"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-medium text-zinc-200 transition-colors hover:bg-white/8"
+                >
+                  Start practice session
+                </Link>
+              </div>
+            </GlowCard>
+
+            <GlowCard className="p-6" glowColor="purple">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="page-kicker">Momentum</p>
+                  <h3 className="mt-4 text-xl font-semibold text-white">{progress.streak} day streak</h3>
+                  <p className="mt-2 text-sm leading-7 text-zinc-400">
+                    Lessons, strategy work, practice, and journal entries all compound when you keep the loop alive.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-orange-400/15 bg-orange-400/10 px-4 py-3 text-right">
+                  <div className="text-2xl font-semibold text-orange-300">{progress.longestStreak}</div>
+                  <div className="text-xs text-orange-200/70">best streak</div>
+                </div>
+              </div>
+              <div className="mt-5 grid grid-cols-3 gap-3">
+                {[
+                  { label: "Lessons", value: progress.completedLessons.length, color: "text-cyan-300" },
+                  { label: "Strategies", value: progress.strategiesBuilt, color: "text-purple-300" },
+                  { label: "Journals", value: progress.journalEntries, color: "text-green-300" },
+                ].map((stat) => (
+                  <div key={stat.label} className="premium-panel-soft p-3 text-center">
+                    <div className={`text-xl font-semibold ${stat.color}`}>{stat.value}</div>
+                    <div className="mt-1 text-[11px] uppercase tracking-[0.16em] text-zinc-500">{stat.label}</div>
+                  </div>
+                ))}
+              </div>
+            </GlowCard>
           </motion.div>
 
           {/* Stats Row */}

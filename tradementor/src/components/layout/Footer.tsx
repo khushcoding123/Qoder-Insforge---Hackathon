@@ -13,7 +13,7 @@ export function Footer() {
                 <TrendingUp className="w-4 h-4 text-white" />
               </div>
               <span className="font-bold text-white text-lg">
-                TradeMentor <span className="text-cyan-400">AI</span>
+                TradeMentor <span className="text-zinc-200">AI</span>
               </span>
             </div>
             <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
@@ -35,7 +35,7 @@ export function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-gray-400 hover:text-cyan-400 text-sm transition-colors"
+                    className="text-gray-400 hover:text-white text-sm transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -54,7 +54,7 @@ export function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
-                    className="text-gray-400 hover:text-cyan-400 text-sm transition-colors"
+                    className="text-gray-400 hover:text-white text-sm transition-colors"
                   >
                     {link.label}
                   </Link>
@@ -66,10 +66,10 @@ export function Footer() {
 
         {/* Disclaimer */}
         <div className="mt-10 pt-8 border-t border-white/10">
-          <div className="flex items-start gap-3 bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-4">
-            <TriangleAlert className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/4 p-4">
+            <TriangleAlert className="w-5 h-5 text-zinc-300 flex-shrink-0 mt-0.5" />
             <p className="text-gray-400 text-xs leading-relaxed">
-              <span className="text-yellow-400 font-semibold">Important Disclaimer: </span>
+              <span className="text-zinc-200 font-semibold">Important Disclaimer: </span>
               TradeMentor AI is an educational platform. Nothing on this platform constitutes financial advice, investment advice, trading advice, or any other sort of advice. Trading involves substantial risk of loss and is not appropriate for everyone. Past performance is not indicative of future results. You should consult with a qualified financial advisor before making any investment decisions. The creators of TradeMentor AI are not responsible for any financial losses incurred as a result of using this platform.
             </p>
           </div>

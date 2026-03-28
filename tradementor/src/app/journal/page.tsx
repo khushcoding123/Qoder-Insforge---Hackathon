@@ -9,7 +9,6 @@ import {
   ChevronUp,
   TrendingUp,
   TrendingDown,
-  Minus,
   Tag,
   Calendar,
   Sparkles,
@@ -21,6 +20,7 @@ import { Footer } from "@/components/layout/Footer";
 import { GlowCard } from "@/components/ui/GlowCard";
 import { Badge } from "@/components/ui/Badge";
 import { StreamingTextFormatted } from "@/components/ui/StreamingText";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { mockJournalEntries, JournalEntry } from "@/lib/data/journal";
 
 interface NewEntryForm {
@@ -318,29 +318,25 @@ export default function JournalPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] flex flex-col">
+    <div className="page-shell">
       <Navbar />
 
-      <main className="flex-1 pt-20 pb-12 px-4">
-        <div className="max-w-7xl mx-auto">
-
-          {/* Header */}
-          <div className="py-6 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-1 flex items-center gap-3">
-                <PenLine className="w-7 h-7 text-green-400" />
-                Trade Journal
-              </h1>
-              <p className="text-gray-400">Track, reflect, and learn from every trade.</p>
-            </div>
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-500 to-cyan-400 text-white font-semibold rounded-xl hover:opacity-90 transition-all text-sm shadow-[0_0_20px_rgba(16,185,129,0.2)]"
-            >
-              <PenLine className="w-4 h-4" />
-              {showForm ? "Cancel" : "Log Trade"}
-            </button>
-          </div>
+      <main className="page-main">
+        <div className="page-container">
+          <PageHeader
+            kicker="Reflection loop"
+            title="Trade Journal"
+            description="Capture execution, risk, emotions, and post-trade lessons in one place so every entry becomes training data for better future decisions."
+            actions={
+              <button
+                onClick={() => setShowForm(!showForm)}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-green-500 to-cyan-400 px-5 py-3 text-sm font-semibold text-white transition-all hover:opacity-90"
+              >
+                <PenLine className="h-4 w-4" />
+                {showForm ? "Cancel" : "Log Trade"}
+              </button>
+            }
+          />
 
           {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">

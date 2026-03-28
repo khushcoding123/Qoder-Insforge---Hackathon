@@ -145,7 +145,7 @@ function TopicCard({
           </p>
           <p className="text-gray-600 text-xs mt-0.5 line-clamp-1">{topic.category}</p>
           {active && (
-            <p className="text-gray-500 text-xs mt-1 italic line-clamp-2">"{topic.reason}"</p>
+            <p className="text-gray-500 text-xs mt-1 italic line-clamp-2">&quot;{topic.reason}&quot;</p>
           )}
         </div>
         {active && <ChevronRight className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0 mt-0.5" />}

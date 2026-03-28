@@ -3,7 +3,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
-  TrendingUp,
   Brain,
   Send,
   ChevronRight,
@@ -24,6 +23,7 @@ import { GlowCard } from "@/components/ui/GlowCard";
 import { Badge } from "@/components/ui/Badge";
 import { StreamingTextFormatted } from "@/components/ui/StreamingText";
 import { CandlestickChart } from "@/components/ui/CandlestickChart";
+import { PageHeader } from "@/components/ui/PageHeader";
 import {
   generateScenario,
   SCENARIO_TYPES,
@@ -315,22 +315,16 @@ export default function PracticePage() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0A0A0F] flex flex-col">
+    <div className="page-shell">
       <Navbar />
 
-      <main className="flex-1 pt-20 pb-12 px-4">
-        <div className="max-w-7xl mx-auto">
-
-          {/* ── Page Header ──────────────────────────────────────────────── */}
-          <div className="py-6">
-            <h1 className="text-3xl font-bold text-white mb-1 flex items-center gap-3">
-              <TrendingUp className="w-7 h-7 text-blue-400" />
-              Chart Practice
-            </h1>
-            <p className="text-gray-400">
-              Analyze AI-generated trading scenarios with Socratic coaching. Read the chart, then let the coach guide your thinking.
-            </p>
-          </div>
+      <main className="page-main">
+        <div className="page-container">
+          <PageHeader
+            kicker="Deliberate practice"
+            title="Chart Practice"
+            description="Analyze AI-generated market scenarios inside a calmer workspace where the chart, checklist, and coaching prompts support your decision process without competing for attention."
+          />
 
           <div className="grid lg:grid-cols-3 gap-6">
 

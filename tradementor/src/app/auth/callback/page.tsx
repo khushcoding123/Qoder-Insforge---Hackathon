@@ -54,12 +54,19 @@ function AuthCallbackInner() {
 
   if (authError) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <p className="text-red-400">Authentication failed: {authError}</p>
+      <div className="auth-shell">
+        <div className="premium-panel w-full max-w-md p-8 text-center">
+          <div className="site-logo-mark mx-auto mb-5">
+            <TrendingUp className="h-5 w-5 text-white" />
+          </div>
+          <h1 className="mb-2 text-xl font-semibold text-white">We couldn&apos;t complete sign-in</h1>
+          <p className="mb-5 text-sm leading-7 text-zinc-400">
+            The authentication flow did not finish successfully. Please try again from the login screen.
+          </p>
+          <div className="status-note mb-5 text-left text-sm text-red-300">{authError}</div>
           <button
             onClick={() => router.push("/login")}
-            className="px-6 py-2.5 bg-gradient-to-r from-cyan-400 to-purple-500 text-white rounded-xl text-sm font-medium"
+            className="rounded-xl bg-gradient-to-r from-cyan-400 to-purple-500 px-6 py-3 text-sm font-medium text-white"
           >
             Back to Login
           </button>
@@ -69,13 +76,13 @@ function AuthCallbackInner() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+    <div className="auth-shell">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center shadow-[0_0_30px_rgba(0,229,255,0.4)]">
-          <TrendingUp className="w-6 h-6 text-white" />
+        <div className="site-logo-mark">
+          <TrendingUp className="h-5 w-5 text-white" />
         </div>
-        <div className="flex items-center gap-2 text-gray-400 text-sm">
-          <Loader2 className="w-4 h-4 animate-spin" />
+        <div className="flex items-center gap-2 text-sm text-zinc-400">
+          <Loader2 className="h-4 w-4 animate-spin" />
           Signing you in…
         </div>
       </div>
@@ -87,9 +94,9 @@ export default function AuthCallbackPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center shadow-[0_0_30px_rgba(0,229,255,0.4)] animate-pulse">
-            <TrendingUp className="w-6 h-6 text-white" />
+        <div className="auth-shell">
+          <div className="site-logo-mark animate-pulse">
+            <TrendingUp className="h-5 w-5 text-white" />
           </div>
         </div>
       }

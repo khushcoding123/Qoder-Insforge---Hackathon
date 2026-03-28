@@ -12,6 +12,7 @@ import { GlowCard } from "@/components/ui/GlowCard";
 import { Badge } from "@/components/ui/Badge";
 import { ProgressRing } from "@/components/ui/ProgressRing";
 import { ScrollAnimatedText } from "@/components/ui/AnimatedText";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { lessons, CATEGORIES } from "@/lib/data/lessons";
 import { mockUserProgress } from "@/lib/data/progress";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -56,22 +57,21 @@ function CatalogContent() {
   const overallProgress = Math.round((completedCount / lessons.length) * 100);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] flex flex-col">
+    <div className="page-shell">
       <Navbar />
-      <main className="flex-1 pt-24 pb-12 px-4">
-        <div className="max-w-7xl mx-auto">
+      <main className="page-main">
+        <div className="page-container">
 
           <ScrollAnimatedText className="mb-8">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-              <div>
-                <Link href="/learn" className="flex items-center gap-1.5 text-gray-500 hover:text-cyan-400 transition-colors text-sm mb-2">
-                  <ArrowLeft className="w-3.5 h-3.5" /> Back to AI Learn
-                </Link>
-                <h1 className="text-3xl font-bold text-white mb-1">Lesson Catalog</h1>
-                <p className="text-gray-400">{completedCount} of {lessons.length} lessons completed</p>
-              </div>
-              <ProgressRing percentage={overallProgress} size={64} strokeWidth={5} label="Overall" animated />
-            </div>
+            <PageHeader
+              kicker="Learning library"
+              title="Lesson Catalog"
+              description={`${completedCount} of ${lessons.length} lessons completed. Browse the full library by category, difficulty, and relevance to your current learning path.`}
+              actions={<ProgressRing percentage={overallProgress} size={64} strokeWidth={5} label="Overall" animated />}
+            />
+            <Link href="/learn" className="inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-cyan-300">
+              <ArrowLeft className="h-3.5 w-3.5" /> Back to AI Learn
+            </Link>
           </ScrollAnimatedText>
 
           <ScrollAnimatedText className="mb-8">
@@ -140,7 +140,7 @@ function CatalogContent() {
                   return (
                     <motion.div key={lesson.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
                       <Link href={`/learn/${lesson.id}`}>
-                        <div className="relative p-5 rounded-2xl border transition-all hover:scale-[1.01] cursor-pointer h-full"
+                        <div className="premium-panel relative h-full p-5 transition-all hover:scale-[1.01] cursor-pointer"
                           style={{ background: `linear-gradient(135deg, ${CATEGORY_COLORS[lesson.category]}10, transparent)`, borderColor: `${CATEGORY_COLORS[lesson.category]}25` }}>
                           {isCompleted && <div className="absolute top-4 right-4"><CircleCheck className="w-5 h-5 text-green-400" /></div>}
                           <Badge className="mb-3" style={{ color: CATEGORY_COLORS[lesson.category], background: `${CATEGORY_COLORS[lesson.category]}15`, borderColor: `${CATEGORY_COLORS[lesson.category]}30` } as React.CSSProperties}>{lesson.category}</Badge>

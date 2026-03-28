@@ -52,12 +52,12 @@ export function ProtectedRoute({ children, requireOnboarding = true }: Protected
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+      <div className="auth-shell">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center shadow-[0_0_30px_rgba(0,229,255,0.4)] animate-pulse">
-            <TrendingUp className="w-6 h-6 text-white" />
+          <div className="site-logo-mark animate-pulse">
+            <TrendingUp className="h-5 w-5 text-white" />
           </div>
-          <p className="text-gray-500 text-sm">Loading...</p>
+          <p className="text-sm text-zinc-500">Preparing your workspace...</p>
         </div>
       </div>
     );

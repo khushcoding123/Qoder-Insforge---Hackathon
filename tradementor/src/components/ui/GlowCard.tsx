@@ -19,20 +19,20 @@ export function GlowCard({
   onClick,
 }: GlowCardProps) {
   const glowStyles = {
-    cyan: "hover:shadow-[0_0_40px_rgba(0,229,255,0.15)] hover:border-cyan-400/30",
-    purple: "hover:shadow-[0_0_40px_rgba(124,58,237,0.2)] hover:border-purple-500/30",
-    blue: "hover:shadow-[0_0_40px_rgba(59,130,246,0.2)] hover:border-blue-500/30",
-    green: "hover:shadow-[0_0_40px_rgba(34,197,94,0.2)] hover:border-green-500/30",
+    cyan: "hover:shadow-[0_20px_48px_rgba(0,0,0,0.32)] hover:border-white/14",
+    purple: "hover:shadow-[0_20px_48px_rgba(0,0,0,0.34)] hover:border-white/14",
+    blue: "hover:shadow-[0_20px_48px_rgba(0,0,0,0.34)] hover:border-white/14",
+    green: "hover:shadow-[0_20px_48px_rgba(0,0,0,0.34)] hover:border-white/14",
     none: "",
   };
 
   return (
     <motion.div
-      whileHover={hover ? { y: -2, scale: 1.005 } : undefined}
-      transition={{ duration: 0.2, ease: "easeOut" }}
+      whileHover={hover ? { y: -3, scale: 1.006 } : undefined}
+      transition={{ duration: 0.22, ease: "easeOut" }}
       onClick={onClick}
       className={cn(
-        "bg-[#0F0F1A] border border-white/10 rounded-xl transition-all duration-300",
+        "premium-panel border-white/10 transition-all duration-300",
         hover && glowStyles[glowColor],
         onClick && "cursor-pointer",
         className

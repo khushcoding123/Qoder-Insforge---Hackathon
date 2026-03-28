@@ -16,13 +16,13 @@ import {
   TrendingUp,
   TriangleAlert,
   Sparkles,
-  Clock,
 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { GlowCard } from "@/components/ui/GlowCard";
 import { Badge } from "@/components/ui/Badge";
 import { ScrollAnimatedText } from "@/components/ui/AnimatedText";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 type ExtensionState = "waiting" | "detected" | "partial" | "strong" | "reflection";
 
@@ -221,34 +221,31 @@ export default function ExtensionPage() {
   const [activeState, setActiveState] = useState<ExtensionState>("strong");
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] flex flex-col">
+    <div className="page-shell">
       <Navbar />
 
-      <main className="flex-1 pt-20 pb-12 px-4">
-        <div className="max-w-7xl mx-auto">
-
-          {/* Header */}
-          <div className="py-8 text-center max-w-3xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-2 text-blue-400 text-sm font-medium mb-6">
-                <Globe className="w-3.5 h-3.5" />
-                Chrome Extension Concept
-              </div>
-              <h1 className="text-4xl font-bold text-white mb-4">
-                Trade with Your Coach <span className="text-gradient">Always Present</span>
-              </h1>
-              <p className="text-gray-400 text-lg leading-relaxed">
-                The TradeMentor Chrome Extension brings your AI coach directly to your charting platform — keeping your strategy checklist, confluence tracker, and risk calculator one click away.
-              </p>
-              <div className="flex items-center justify-center gap-2 mt-6">
-                <Badge variant="yellow">Concept Demo</Badge>
-                <Badge variant="default">Coming Soon</Badge>
-              </div>
-            </motion.div>
-          </div>
+      <main className="page-main">
+        <div className="page-container">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-4xl text-center">
+            <PageHeader
+              kicker={
+                <>
+                  <Globe className="h-3.5 w-3.5" />
+                  Chrome extension concept
+                </>
+              }
+              title={
+                <>
+                  Trade with your coach <span className="text-gradient">always present</span>
+                </>
+              }
+              description="The TradeMentor extension brings your checklist, confluence tracker, coaching prompts, and journaling workflow directly into the charting context where decisions actually happen."
+            />
+            <div className="mt-6 flex items-center justify-center gap-2">
+              <Badge variant="yellow">Concept Demo</Badge>
+              <Badge variant="default">Coming Soon</Badge>
+            </div>
+          </motion.div>
 
           {/* Extension Demo */}
           <div className="grid lg:grid-cols-2 gap-12 items-start mb-20">
@@ -261,10 +258,10 @@ export default function ExtensionPage() {
                     <button
                       key={s.id}
                       onClick={() => setActiveState(s.id)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                  className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${
                         activeState === s.id
-                          ? "bg-cyan-400/20 border-cyan-400/30 text-cyan-400"
-                          : "bg-white/5 border-white/10 text-gray-400 hover:border-white/20"
+                          ? "bg-cyan-400/20 border-cyan-400/30 text-cyan-300"
+                          : "bg-white/5 border-white/10 text-zinc-400 hover:border-white/20"
                       }`}
                     >
                       {s.label}
@@ -275,7 +272,7 @@ export default function ExtensionPage() {
 
               {/* Mock browser chrome */}
               <div className="w-full max-w-sm">
-                <div className="bg-[#1A1A2E] border border-white/15 rounded-t-xl px-3 py-2 flex items-center gap-2">
+                <div className="rounded-t-xl border border-white/15 bg-[#141622] px-3 py-2 flex items-center gap-2">
                   <div className="flex gap-1">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
                     <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
@@ -391,8 +388,8 @@ export default function ExtensionPage() {
           {/* How It Works */}
           <ScrollAnimatedText className="mb-10">
             <div className="text-center">
-              <div className="text-cyan-400 text-sm font-semibold uppercase tracking-widest mb-2">Workflow</div>
-              <h2 className="text-3xl font-bold text-white">How It Works</h2>
+              <div className="page-kicker mx-auto mb-3">Workflow</div>
+              <h2 className="section-heading">How It Works</h2>
             </div>
           </ScrollAnimatedText>
 
@@ -417,10 +414,10 @@ export default function ExtensionPage() {
 
           {/* CTA */}
           <ScrollAnimatedText>
-            <div className="bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-cyan-400/10 border border-white/10 rounded-3xl p-10 text-center">
-              <Globe className="w-10 h-10 text-blue-400 mx-auto mb-4" />
+            <div className="premium-panel bg-gradient-to-br from-cyan-400/10 via-purple-500/10 to-blue-500/10 p-10 text-center">
+              <Globe className="mx-auto mb-4 h-10 w-10 text-cyan-300" />
               <h2 className="text-2xl font-bold text-white mb-3">Extension Coming Soon</h2>
-              <p className="text-gray-400 mb-6 max-w-md mx-auto">
+              <p className="mx-auto mb-6 max-w-md text-zinc-400">
                 The Chrome Extension is in development. In the meantime, use the Practice page with the AI coach to sharpen your analysis skills.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
