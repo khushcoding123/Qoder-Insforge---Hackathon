@@ -20,10 +20,12 @@ export function createServerClient(accessToken?: string) {
   });
 }
 
-export async function setAuthCookies(accessToken: string, refreshToken: string) {
+export async function setAuthCookies(accessToken: string, refreshToken?: string) {
   const store = await cookies();
   store.set(ACCESS_COOKIE, accessToken, { ...cookieOpts, maxAge: 60 * 15 });
-  store.set(REFRESH_COOKIE, refreshToken, { ...cookieOpts, maxAge: 60 * 60 * 24 * 7 });
+  if (refreshToken) {
+    store.set(REFRESH_COOKIE, refreshToken, { ...cookieOpts, maxAge: 60 * 60 * 24 * 7 });
+  }
 }
 
 export async function clearAuthCookies() {

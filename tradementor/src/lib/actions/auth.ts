@@ -79,10 +79,10 @@ export async function handleOAuthCallback(code: string, codeVerifier?: string) {
   const client = createServerClient(); // no token needed — we're exchanging the code
   const { data, error } = await client.auth.exchangeOAuthCode(code, codeVerifier);
   if (error) return { success: false, error: error.message };
-  if (!data?.accessToken || !data?.refreshToken) {
-    return { success: false, error: "OAuth exchange failed: no tokens received." };
+  if (!data?.accessToken) {
+    return { success: false, error: "OAuth exchange failed: no access token received." };
   }
-  await setAuthCookies(data.accessToken, data.refreshToken);
+  await setAuthCookies(data.accessToken, data.refreshToken ?? undefined);
   return { success: true };
 }
 

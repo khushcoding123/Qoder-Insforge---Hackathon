@@ -48,7 +48,11 @@
       "Bash(powershell -Command \"Stop-Process -Id 42584 -Force; Start-Sleep -Seconds 1; Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | Select-Object LocalPort,OwningProcess\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://7kwxa5rq.us-east.insforge.app\")",
       "Bash(curl:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(find 'C:\\\\Users\\\\khush\\\\OneDrive - Lake Washington School District\\\\Hackathon-Insforge\\\\Qoder-Insforge---Hackathon\\\\tradementor\\\\node_modules\\\\@insforge\\\\shared-schemas' -name *.d.ts)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(d.get\\(''''oss_host'''',''''''''\\)\\)\")",
+      "Bash(npx @insforge/cli docs auth typescript)",
+      "Bash(npx @insforge/cli logs insforge.logs --limit 30)"
     ]
   }
 }

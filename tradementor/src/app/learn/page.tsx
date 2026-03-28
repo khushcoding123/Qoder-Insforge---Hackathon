@@ -307,7 +307,8 @@ function LearnPageContent() {
         if (done) break;
         text += decoder.decode(value);
       }
-      const parsed: TopicSuggestion[] = JSON.parse(text);
+      const clean = text.replace(/^```[\w]*\n?/m, "").replace(/\n?```$/m, "").trim();
+      const parsed: TopicSuggestion[] = JSON.parse(clean);
       setSuggestedTopics(parsed);
     } catch (e) {
       console.error("Topic generation failed", e);

@@ -8,33 +8,41 @@ import { handleOAuthCallback, checkOnboardingStatus } from "@/lib/actions/auth";
 function AuthCallbackInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [authError, setAuthError] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     async function handle() {
       const code = searchParams.get("insforge_code");
+      const providerError = searchParams.get("error");
       if (!code) {
-        // No code in URL — redirect to login with error flag
-        router.replace("/login?error=oauth_failed");
+        const msg = providerError
+          ? `OAuth error from provider: ${providerError}`
+          : `No authorization code in URL. Params: ${window.location.search || "(none)"} Hash: ${window.location.hash || "(none)"}`;
+        setAuthError(msg);
         return;
       }
 
-      // Retrieve the PKCE verifier stored before the OAuth redirect
-      const codeVerifier = sessionStorage.getItem("insforge_oauth_verifier") ?? undefined;
+      // Retrieve the PKCE verifier stored before the OAuth redirect.
+      // Try our custom key first, then fall back to the SDK's internal key.
+      const codeVerifier =
+        sessionStorage.getItem("insforge_oauth_verifier") ??
+        sessionStorage.getItem("insforge_pkce_verifier") ??
+        undefined;
       sessionStorage.removeItem("insforge_oauth_verifier");
+      sessionStorage.removeItem("insforge_pkce_verifier");
 
       // Exchange the code server-side so httpOnly cookies are set
       const exchangeResult = await handleOAuthCallback(code, codeVerifier);
       if (!exchangeResult.success) {
         console.error("[auth/callback] OAuth exchange failed:", exchangeResult.error);
-        setAuthError(true);
+        setAuthError(exchangeResult.error ?? "Token exchange failed.");
         return;
       }
 
       // Now that cookies are set, check onboarding status server-side
       const { authenticated, onboardingCompleted } = await checkOnboardingStatus();
       if (!authenticated) {
-        router.replace("/login?error=oauth_failed");
+        setAuthError("Authentication check failed after token exchange.");
         return;
       }
 
@@ -48,7 +56,7 @@ function AuthCallbackInner() {
     return (
       <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
         <div className="text-center space-y-4">
-          <p className="text-red-400">Authentication failed. Please try again.</p>
+          <p className="text-red-400">Authentication failed: {authError}</p>
           <button
             onClick={() => router.push("/login")}
             className="px-6 py-2.5 bg-gradient-to-r from-cyan-400 to-purple-500 text-white rounded-xl text-sm font-medium"
