@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(claude-api)",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-git)",
+      "Bash(npx create-next-app@latest tradementor --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-git)",
+      "Bash(npx create-next-app@latest tradementor --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-git --no-turbopack)",
+      "Bash(npx create-next-app@latest tradementor --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-git --no-turbopack --yes)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(grep -n '^\\\\`\\\\`\\\\`' \"C:/Users/khush/OneDrive - Lake Washington School District/Hackathon-Insforge/Qoder-Insforge---Hackathon/tradementor/src/lib/data/lessons.ts\")",
+      "Bash(node -e \":*)",
+      "Bash(node fix.js)",
+      "Bash(cd:*)",
+      "Bash(sed -n '188,196p' \"C:/Users/khush/OneDrive - Lake Washington School District/Hackathon-Insforge/Qoder-Insforge---Hackathon/tradementor/src/app/learn/page.tsx\")",
+      "Bash(sed -n '260,267p' \"C:/Users/khush/OneDrive - Lake Washington School District/Hackathon-Insforge/Qoder-Insforge---Hackathon/tradementor/src/app/learn/page.tsx\")",
+      "Bash(\"C:/Users/khush/OneDrive - Lake Washington School District/Hackathon-Insforge/Qoder-Insforge---Hackathon/tradementor/.env.local\")",
+      "Bash(npm run:*)",
+      "Bash(wc -l src/**/*.tsx src/**/*.ts)",
+      "Bash(insforge status:*)",
+      "Bash(npx @insforge/cli whoami)",
+      "Bash(npx @insforge/cli current)",
+      "Bash(npx @insforge/cli list)",
+      "Bash(npx @insforge/cli link --yes)",
+      "Bash(npx @insforge/cli list --json)",
+      "Bash(npx @insforge/cli link --project-id 18ad60b3-179d-4e4d-b602-9dbf14a5d586 --org-id 98894c33-ac1f-486c-987c-051254f23894 -y)",
+      "Bash(npx @insforge/cli metadata --json)",
+      "Bash(curl -s \"https://7kwxa5rq.us-east.insforge.app/api/auth/public-config\")",
+      "Bash(curl -s \"https://7kwxa5rq.us-east.insforge.app/api/auth/tokens/anon\" -X POST -H \"Authorization: Bearer ik_805f7b6ec2856b52a534f252f18a48c4\")",
+      "Bash(npx @insforge/cli db query \"CREATE TABLE user_profiles \\(:*)",
+      "Bash(npx @insforge/cli db query \"CREATE TABLE user_profiles \\(id UUID PRIMARY KEY DEFAULT gen_random_uuid\\(\\), user_id UUID REFERENCES auth.users\\(id\\) ON DELETE CASCADE UNIQUE, experience TEXT NOT NULL DEFAULT ''beginner'', familiarity TEXT[] NOT NULL DEFAULT ''{}'', markets TEXT[] NOT NULL DEFAULT ''{}'', goal TEXT NOT NULL DEFAULT ''learning-basics'', time_commitment TEXT NOT NULL DEFAULT ''casual'', onboarding_completed BOOLEAN NOT NULL DEFAULT false, created_at TIMESTAMPTZ DEFAULT NOW\\(\\), updated_at TIMESTAMPTZ DEFAULT NOW\\(\\)\\)\")",
+      "Bash(npx @insforge/cli db query \"ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY\")",
+      "Bash(npx @insforge/cli db query \"CREATE POLICY \"\"users_own_profile\"\" ON user_profiles FOR ALL USING \\(user_id = auth.uid\\(\\)\\) WITH CHECK \\(user_id = auth.uid\\(\\)\\)\")",
+      "Bash(npx @insforge/cli db query \"CREATE TRIGGER user_profiles_updated_at BEFORE UPDATE ON user_profiles FOR EACH ROW EXECUTE FUNCTION system.update_updated_at\\(\\)\")",
+      "Bash(npx @insforge/cli db query \"CREATE TABLE user_learn_progress \\(id UUID PRIMARY KEY DEFAULT gen_random_uuid\\(\\), user_id UUID REFERENCES auth.users\\(id\\) ON DELETE CASCADE, topic_id TEXT NOT NULL, topic_title TEXT NOT NULL, topic_category TEXT NOT NULL, status TEXT NOT NULL DEFAULT ''started'', completed_at TIMESTAMPTZ, created_at TIMESTAMPTZ DEFAULT NOW\\(\\), UNIQUE\\(user_id, topic_id\\)\\)\")",
+      "Bash(npx @insforge/cli db query \"ALTER TABLE user_learn_progress ENABLE ROW LEVEL SECURITY\")",
+      "Bash(npx @insforge/cli db query \"CREATE POLICY \"\"users_own_progress\"\" ON user_learn_progress FOR ALL USING \\(user_id = auth.uid\\(\\)\\) WITH CHECK \\(user_id = auth.uid\\(\\)\\)\")",
+      "Bash(find '/c/Users/khush/OneDrive - Lake Washington School District/Hackathon-Insforge/Qoder-Insforge---Hackathon/tradementor/node_modules/@insforge/sdk' -name *.d.ts)",
+      "Bash(xargs grep:*)"
+    ]
+  }
+}
