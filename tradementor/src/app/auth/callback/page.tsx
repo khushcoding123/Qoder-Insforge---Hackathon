@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { TrendingUp, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { BrandMark } from "@/components/brand/Brand";
 import { setSessionFromAccessToken, checkOnboardingStatus } from "@/lib/actions/auth";
 import { insforge } from "@/lib/insforge";
 
@@ -53,9 +54,7 @@ function AuthCallbackInner() {
     return (
       <div className="auth-shell">
         <div className="premium-panel w-full max-w-md p-8 text-center">
-          <div className="site-logo-mark mx-auto mb-5">
-            <TrendingUp className="h-5 w-5 text-white" />
-          </div>
+          <BrandMark className="mx-auto mb-5 h-10 w-10" />
           <h1 className="mb-2 text-xl font-semibold text-white">We couldn&apos;t complete sign-in</h1>
           <p className="mb-5 text-sm leading-7 text-zinc-400">
             The authentication flow did not finish successfully. Please try again from the login screen.
@@ -75,9 +74,7 @@ function AuthCallbackInner() {
   return (
     <div className="auth-shell">
       <div className="flex flex-col items-center gap-4">
-        <div className="site-logo-mark">
-          <TrendingUp className="h-5 w-5 text-white" />
-        </div>
+        <BrandMark className="h-10 w-10" />
         <div className="flex items-center gap-2 text-sm text-zinc-400">
           <Loader2 className="h-4 w-4 animate-spin" />
           Signing you in…

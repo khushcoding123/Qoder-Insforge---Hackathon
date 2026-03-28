@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { TrendingUp, TriangleAlert } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
+import { BrandLockup } from "@/components/brand/Brand";
 
 export function Footer() {
   return (
@@ -8,13 +9,11 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="md:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center">
-                <TrendingUp className="w-4 h-4 text-white" />
-              </div>
-              <span className="font-bold text-white text-lg">
-                Lumen
-              </span>
+            <div className="mb-4">
+              <BrandLockup
+                markClassName="h-8 w-8 rounded-[0.85rem] shadow-[0_0_18px_rgba(34,211,238,0.14)]"
+                textClassName="text-lg font-bold text-white"
+              />
             </div>
             <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
               An AI-powered educational platform that teaches you to think like a strategist — not follow signals.

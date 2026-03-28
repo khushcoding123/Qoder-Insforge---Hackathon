@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { TrendingUp } from "lucide-react";
 
+import { BrandLockup } from "@/components/brand/Brand";
 import { cn } from "@/lib/cn";
 
 interface AuthShellProps {
@@ -19,12 +19,10 @@ export function AuthShell({ title, description, children, footer, className }: A
     <div className="auth-shell grid-bg">
       <div className={cn("auth-shell-frame max-w-md", className)}>
         <Link href="/" className="site-logo-lockup auth-shell-brand">
-          <div className="site-logo-mark">
-            <TrendingUp className="h-5 w-5 text-white" />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-white">
-            Lumen
-          </span>
+          <BrandLockup
+            markClassName="h-10 w-10"
+            textClassName="text-xl font-bold tracking-tight text-white"
+          />
         </Link>
 
         <div className="auth-shell-main">

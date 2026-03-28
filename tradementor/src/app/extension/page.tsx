@@ -17,6 +17,7 @@ import {
   TriangleAlert,
   Sparkles,
 } from "lucide-react";
+import { BrandMark } from "@/components/brand/Brand";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { GlowCard } from "@/components/ui/GlowCard";
@@ -76,9 +77,7 @@ function ExtensionPopup({ state }: { state: ExtensionState }) {
       {/* Extension Header */}
       <div className="bg-gradient-to-r from-cyan-400/10 to-purple-500/10 border-b border-white/10 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center">
-            <TrendingUp className="w-3.5 h-3.5 text-white" />
-          </div>
+          <BrandMark className="h-7 w-7 rounded-[0.8rem]" />
           <span className="text-white font-bold text-sm">Lumen</span>
         </div>
         <div className="flex items-center gap-1.5">
@@ -281,9 +280,7 @@ export default function ExtensionPage() {
                   <div className="flex-1 mx-2 bg-white/5 rounded px-2 py-0.5 text-gray-600 text-xs">
                     tradingview.com/chart/
                   </div>
-                  <div className="w-5 h-5 rounded bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center">
-                    <TrendingUp className="w-3 h-3 text-white" />
-                  </div>
+                  <BrandMark className="h-5 w-5 rounded-[0.65rem]" />
                 </div>
                 <div className="bg-[#1A1F35] border border-t-0 border-white/10 rounded-b-xl p-6 h-48 flex items-center justify-center relative">
                   {/* Fake chart lines */}

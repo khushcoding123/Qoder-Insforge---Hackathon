@@ -348,17 +348,6 @@ body {
   justify-content: center;
 }
 
-.site-logo-mark {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.9rem;
-  background: linear-gradient(135deg, #8fb8ff, #8b7de8);
-  box-shadow: 0 0 24px rgba(143, 184, 255, 0.2);
-}
-
 .soft-divider {
   height: 1px;
   width: 100%;

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { TrendingUp } from "lucide-react";
+import { BrandMark } from "@/components/brand/Brand";
 import { checkOnboardingStatus } from "@/lib/actions/auth";
 
 interface ProtectedRouteProps {
@@ -54,9 +54,7 @@ export function ProtectedRoute({ children, requireOnboarding = true }: Protected
     return (
       <div className="auth-shell">
         <div className="flex flex-col items-center gap-4">
-          <div className="site-logo-mark animate-pulse">
-            <TrendingUp className="h-5 w-5 text-white" />
-          </div>
+          <BrandMark className="h-10 w-10 animate-pulse" />
           <p className="text-sm text-zinc-500">Preparing your workspace...</p>
         </div>
       </div>

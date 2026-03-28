@@ -9,6 +9,7 @@ import {
   BookOpen, Brain, Target, Clock, BarChart2, Shield,
   Activity, Layers, Zap,
 } from "lucide-react";
+import { BrandLockup } from "@/components/brand/Brand";
 import { saveOnboardingProfile } from "@/lib/actions/profile";
 import type { OnboardingProfile } from "@/lib/actions/profile";
 
@@ -167,12 +168,10 @@ export default function OnboardingPage() {
     <div className="auth-shell grid-bg">
       <div className="auth-shell-frame max-w-xl">
         <Link href="/" className="site-logo-lockup auth-shell-brand">
-          <div className="site-logo-mark">
-            <TrendingUp className="h-5 w-5 text-white" />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-white">
-            Lumen
-          </span>
+          <BrandLockup
+            markClassName="h-10 w-10"
+            textClassName="text-xl font-bold tracking-tight text-white"
+          />
         </Link>
 
         <div className="auth-shell-main">
