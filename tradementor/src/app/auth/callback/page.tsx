@@ -1,48 +1,45 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { TrendingUp, Loader2 } from "lucide-react";
-import { handleOAuthCallback, checkOnboardingStatus } from "@/lib/actions/auth";
+import { setSessionFromAccessToken, checkOnboardingStatus } from "@/lib/actions/auth";
+import { insforge } from "@/lib/insforge";
 
 function AuthCallbackInner() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     async function handle() {
-      const code = searchParams.get("insforge_code");
-      const providerError = searchParams.get("error");
-      if (!code) {
+      // The InsForge SDK automatically detects `insforge_code` in the URL on
+      // initialization, exchanges it for tokens, and stores them in memory.
+      // We just need to wait for that to finish.
+      await (insforge.auth as unknown as { authCallbackHandled: Promise<void> }).authCallbackHandled;
+
+      // Get the access token the SDK just stored in memory.
+      const session = (insforge.auth as unknown as { tokenManager: { getSession: () => { accessToken: string } | null } }).tokenManager.getSession();
+
+      if (!session?.accessToken) {
+        const providerError = new URLSearchParams(window.location.search).get("error");
         const msg = providerError
           ? `OAuth error from provider: ${providerError}`
-          : `No authorization code in URL. Params: ${window.location.search || "(none)"} Hash: ${window.location.hash || "(none)"}`;
+          : "Sign-in was not completed. Please try again from the login screen.";
         setAuthError(msg);
         return;
       }
 
-      // Retrieve the PKCE verifier stored before the OAuth redirect.
-      // Try our custom key first, then fall back to the SDK's internal key.
-      const codeVerifier =
-        sessionStorage.getItem("insforge_oauth_verifier") ??
-        sessionStorage.getItem("insforge_pkce_verifier") ??
-        undefined;
-      sessionStorage.removeItem("insforge_oauth_verifier");
-      sessionStorage.removeItem("insforge_pkce_verifier");
-
-      // Exchange the code server-side so httpOnly cookies are set
-      const exchangeResult = await handleOAuthCallback(code, codeVerifier);
-      if (!exchangeResult.success) {
-        console.error("[auth/callback] OAuth exchange failed:", exchangeResult.error);
-        setAuthError(exchangeResult.error ?? "Token exchange failed.");
+      // Pass the access token to the server so it can set httpOnly cookies.
+      const result = await setSessionFromAccessToken(session.accessToken);
+      if (!result.success) {
+        setAuthError(result.error ?? "Failed to complete sign-in.");
         return;
       }
 
-      // Now that cookies are set, check onboarding status server-side
+      // Cookies are now set — check onboarding status and redirect.
       const { authenticated, onboardingCompleted } = await checkOnboardingStatus();
       if (!authenticated) {
-        setAuthError("Authentication check failed after token exchange.");
+        setAuthError("Authentication check failed after sign-in.");
         return;
       }
 
@@ -50,7 +47,7 @@ function AuthCallbackInner() {
     }
 
     handle();
-  }, [router, searchParams]);
+  }, [router]);
 
   if (authError) {
     return (
@@ -91,17 +88,5 @@ function AuthCallbackInner() {
 }
 
 export default function AuthCallbackPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="auth-shell">
-          <div className="site-logo-mark animate-pulse">
-            <TrendingUp className="h-5 w-5 text-white" />
-          </div>
-        </div>
-      }
-    >
-      <AuthCallbackInner />
-    </Suspense>
-  );
+  return <AuthCallbackInner />;
 }

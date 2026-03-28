@@ -14,7 +14,10 @@ import {
   BookOpen,
   Shield,
   Clock,
+  Save,
+  Globe,
 } from "lucide-react";
+import { saveStrategy } from "@/lib/actions/strategy";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { GlowCard } from "@/components/ui/GlowCard";
@@ -99,6 +102,8 @@ export default function StrategyPage() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [showExamples, setShowExamples] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [savedStrategyName, setSavedStrategyName] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -158,6 +163,26 @@ Please analyze these inputs, ask me clarifying questions to understand my goals 
     setStep(5);
     const prompt = "Based on everything we've discussed, please generate a complete, formatted Strategy Blueprint for me with all the sections: Strategy Name, Asset Class & Style, Core Premise, Entry Rules, Stop Loss Rules, Profit Target Rules, Risk Rules, Filters, and Testing Plan.";
     await handleSend(prompt);
+  };
+
+  const handleSaveStrategy = async () => {
+    const blueprint = messages.findLast((m) => m.role === "assistant")?.content;
+    if (!blueprint) return;
+    setSaveStatus("saving");
+    const result = await saveStrategy({
+      blueprintText: blueprint,
+      assetClass: ctx.assetClass,
+      tradingStyle: ctx.tradingStyle,
+      experienceLevel: ctx.experienceLevel,
+      riskTolerance: ctx.riskTolerance,
+      preferredConcepts: ctx.preferredConcepts,
+    });
+    if (result.success) {
+      setSaveStatus("saved");
+      setSavedStrategyName(result.strategyName || "My Strategy");
+    } else {
+      setSaveStatus("error");
+    }
   };
 
   const toggleConcept = (concept: string) => {
@@ -426,6 +451,40 @@ Please analyze these inputs, ask me clarifying questions to understand my goals 
                     exit={{ opacity: 0, x: -20 }}
                     className="space-y-4"
                   >
+                    {/* Save to Extension banner — shown at step 5 after blueprint generated */}
+                    {step === 5 && messages.some((m) => m.role === "assistant") && !isStreaming && (
+                      <div className="bg-gradient-to-r from-cyan-400/10 to-purple-500/10 border border-cyan-400/20 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <Globe className="w-5 h-5 text-cyan-400 flex-shrink-0" />
+                          <div>
+                            <p className="text-white text-sm font-semibold">Save for Chrome Extension</p>
+                            <p className="text-gray-400 text-xs">
+                              {saveStatus === "saved"
+                                ? `"${savedStrategyName}" saved — the extension will coach you based on this strategy.`
+                                : "Save your blueprint so the TradeMentor extension can coach you on live charts."}
+                            </p>
+                          </div>
+                        </div>
+                        {saveStatus !== "saved" ? (
+                          <button
+                            onClick={handleSaveStrategy}
+                            disabled={saveStatus === "saving"}
+                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-400 to-purple-500 text-white text-sm font-semibold rounded-xl hover:opacity-90 disabled:opacity-50 transition-all whitespace-nowrap"
+                          >
+                            <Save className="w-3.5 h-3.5" />
+                            {saveStatus === "saving" ? "Saving..." : saveStatus === "error" ? "Try Again" : "Save Strategy"}
+                          </button>
+                        ) : (
+                          <Link
+                            href="/extension"
+                            className="flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-500/30 text-green-400 text-sm font-semibold rounded-xl hover:bg-green-500/30 transition-all whitespace-nowrap"
+                          >
+                            <CircleCheck className="w-3.5 h-3.5" />
+                            View Extension
+                          </Link>
+                        )}
+                      </div>
+                    )}
                     <GlowCard className="flex flex-col h-[550px]" glowColor="purple">
                       {/* Chat header */}
                       <div className="p-5 border-b border-white/10 flex items-center justify-between">

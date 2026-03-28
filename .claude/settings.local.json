@@ -52,7 +52,12 @@
       "Bash(find 'C:\\\\Users\\\\khush\\\\OneDrive - Lake Washington School District\\\\Hackathon-Insforge\\\\Qoder-Insforge---Hackathon\\\\tradementor\\\\node_modules\\\\@insforge\\\\shared-schemas' -name *.d.ts)",
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(d.get\\(''''oss_host'''',''''''''\\)\\)\")",
       "Bash(npx @insforge/cli docs auth typescript)",
-      "Bash(npx @insforge/cli logs insforge.logs --limit 30)"
+      "Bash(npx @insforge/cli logs insforge.logs --limit 30)",
+      "Bash(grep -r \"insforge_code\\\\|authorization_code\\\\|oauth.*code\\\\|code.*verifier\\\\|redirectTo\\\\|callback\" 'C:/Users/khush/OneDrive - Lake Washington School District/Hackathon-Insforge/Qoder-Insforge---Hackathon/tradementor/node_modules/@insforge/sdk/dist' --include=*.js -l)",
+      "Bash(grep -E \"^[^.]*$\")",
+      "Bash(npx @insforge/cli logs postgres.logs --limit 5)",
+      "Bash(npx @insforge/cli db import create_strategies_table.sql)",
+      "Bash(npx @insforge/cli db tables --json)"
     ]
   }
 }

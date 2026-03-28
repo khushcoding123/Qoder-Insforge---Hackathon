@@ -87,6 +87,20 @@ export async function handleOAuthCallback(code: string, codeVerifier?: string) {
 }
 
 /**
+ * Set httpOnly cookies from an access token already held by the client SDK.
+ * Called from /auth/callback after the InsForge SDK auto-exchanges the OAuth code.
+ */
+export async function setSessionFromAccessToken(accessToken: string): Promise<{ success: boolean; error?: string }> {
+  const client = createServerClient(accessToken);
+  const { data, error } = await client.auth.getCurrentUser();
+  if (error || !data?.user) {
+    return { success: false, error: "Invalid or expired access token." };
+  }
+  await setAuthCookies(accessToken);
+  return { success: true };
+}
+
+/**
  * Server-side check: is the current request authenticated, and has the user
  * completed onboarding? Uses httpOnly cookies so it works after both
  * email/password login and Google OAuth.
