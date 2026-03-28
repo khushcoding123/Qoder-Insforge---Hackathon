@@ -1,59 +1,54 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { TrendingUp, Loader2 } from "lucide-react";
-import { insforge } from "@/lib/insforge";
+import { handleOAuthCallback, checkOnboardingStatus } from "@/lib/actions/auth";
 
-export default function AuthCallbackPage() {
+function AuthCallbackInner() {
   const router = useRouter();
-  const [status, setStatus] = useState<"loading" | "error">("loading");
+  const searchParams = useSearchParams();
+  const [authError, setAuthError] = useState(false);
 
   useEffect(() => {
-    // The InsForge SDK automatically detects `insforge_code` in the URL on init
-    // and exchanges it for a session. We just need to wait for getCurrentUser().
-    let attempts = 0;
-
-    async function waitForAuth() {
-      // Give the SDK a moment to process the OAuth callback
-      await new Promise((r) => setTimeout(r, 800));
-
-      while (attempts < 10) {
-        attempts++;
-        const { data, error } = await insforge.auth.getCurrentUser();
-
-        if (data?.user) {
-          // Check if onboarding is done
-          const { data: profileData } = await insforge.database
-            .from("user_profiles")
-            .select("onboarding_completed")
-            .eq("user_id", data.user.id)
-            .maybeSingle();
-
-          const hasOnboarded = profileData?.onboarding_completed === true;
-          router.replace(hasOnboarded ? "/dashboard" : "/onboarding");
-          return;
-        }
-
-        if (error && attempts >= 5) {
-          setStatus("error");
-          return;
-        }
-
-        await new Promise((r) => setTimeout(r, 500));
+    async function handle() {
+      const code = searchParams.get("insforge_code");
+      if (!code) {
+        // No code in URL — redirect to login with error flag
+        router.replace("/login?error=oauth_failed");
+        return;
       }
 
-      setStatus("error");
+      // Retrieve the PKCE verifier stored before the OAuth redirect
+      const codeVerifier = sessionStorage.getItem("insforge_oauth_verifier") ?? undefined;
+      sessionStorage.removeItem("insforge_oauth_verifier");
+
+      // Exchange the code server-side so httpOnly cookies are set
+      const exchangeResult = await handleOAuthCallback(code, codeVerifier);
+      if (!exchangeResult.success) {
+        console.error("[auth/callback] OAuth exchange failed:", exchangeResult.error);
+        setAuthError(true);
+        return;
+      }
+
+      // Now that cookies are set, check onboarding status server-side
+      const { authenticated, onboardingCompleted } = await checkOnboardingStatus();
+      if (!authenticated) {
+        router.replace("/login?error=oauth_failed");
+        return;
+      }
+
+      router.replace(onboardingCompleted ? "/dashboard" : "/onboarding");
     }
 
-    waitForAuth();
-  }, [router]);
+    handle();
+  }, [router, searchParams]);
 
-  if (status === "error") {
+  if (authError) {
     return (
       <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-400 mb-4">Authentication failed. Please try again.</p>
+        <div className="text-center space-y-4">
+          <p className="text-red-400">Authentication failed. Please try again.</p>
           <button
             onClick={() => router.push("/login")}
             className="px-6 py-2.5 bg-gradient-to-r from-cyan-400 to-purple-500 text-white rounded-xl text-sm font-medium"
@@ -73,9 +68,25 @@ export default function AuthCallbackPage() {
         </div>
         <div className="flex items-center gap-2 text-gray-400 text-sm">
           <Loader2 className="w-4 h-4 animate-spin" />
-          Signing you in...
+          Signing you in…
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center shadow-[0_0_30px_rgba(0,229,255,0.4)] animate-pulse">
+            <TrendingUp className="w-6 h-6 text-white" />
+          </div>
+        </div>
+      }
+    >
+      <AuthCallbackInner />
+    </Suspense>
   );
 }

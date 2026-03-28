@@ -22,7 +22,7 @@ export async function saveOnboardingProfile(profile: OnboardingProfile) {
 
   const { error } = await client.database
     .from("user_profiles")
-    .insert([
+    .upsert(
       {
         user_id: userId,
         experience: profile.experience,
@@ -32,24 +32,10 @@ export async function saveOnboardingProfile(profile: OnboardingProfile) {
         time_commitment: profile.timeCommitment,
         onboarding_completed: true,
       },
-    ])
-    .select();
+      { onConflict: "user_id" }
+    );
 
-  if (error) {
-    // Try update if insert fails (user already has a profile)
-    const { error: updateError } = await client.database
-      .from("user_profiles")
-      .update({
-        experience: profile.experience,
-        familiarity: profile.familiarity,
-        markets: profile.markets,
-        goal: profile.goal,
-        time_commitment: profile.timeCommitment,
-        onboarding_completed: true,
-      })
-      .eq("user_id", userId);
-    if (updateError) return { success: false, error: updateError.message };
-  }
+  if (error) return { success: false, error: error.message };
 
   return { success: true };
 }

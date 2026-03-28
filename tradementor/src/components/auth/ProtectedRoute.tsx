@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { TrendingUp } from "lucide-react";
-import { insforge } from "@/lib/insforge";
+import { checkOnboardingStatus } from "@/lib/actions/auth";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -20,31 +20,21 @@ export function ProtectedRoute({ children, requireOnboarding = true }: Protected
 
     async function check() {
       try {
-        const { data, error } = await insforge.auth.getCurrentUser();
+        // Server action reads httpOnly cookies — works for both email/password
+        // and Google OAuth flows.
+        const { authenticated, onboardingCompleted } = await checkOnboardingStatus();
         if (cancelled) return;
 
-        if (error || !data?.user) {
+        if (!authenticated) {
           router.replace("/login");
           setStatus("unauthed");
           return;
         }
 
-        if (requireOnboarding) {
-          const userId = data.user.id;
-          const { data: profileData } = await insforge.database
-            .from("user_profiles")
-            .select("onboarding_completed")
-            .eq("user_id", userId)
-            .maybeSingle();
-
-          if (cancelled) return;
-
-          const hasOnboarded = profileData?.onboarding_completed === true;
-          if (!hasOnboarded && pathname !== "/onboarding") {
-            router.replace("/onboarding");
-            setStatus("unauthed");
-            return;
-          }
+        if (requireOnboarding && !onboardingCompleted && pathname !== "/onboarding") {
+          router.replace("/onboarding");
+          setStatus("unauthed");
+          return;
         }
 
         setStatus("authed");

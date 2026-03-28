@@ -61,22 +61,41 @@ All routes use streaming (`claude-opus-4-6`) for real-time response display.
 npm install
 ```
 
-**2. Set your API key**
+**2. Configure environment variables**
 ```bash
 cp .env.local.example .env.local
-# Add your Anthropic API key to .env.local
 ```
+
+Edit `.env.local` and fill in all three values:
 
 ```env
-ANTHROPIC_API_KEY=your_api_key_here
+# From https://console.anthropic.com/account/keys
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+
+# From your InsForge project dashboard → Settings → API Keys
+NEXT_PUBLIC_INSFORGE_URL=https://your-app-key.region.insforge.app
+NEXT_PUBLIC_INSFORGE_ANON_KEY=your_insforge_anon_key_here
 ```
 
-**3. Run the dev server**
+**3. (Optional) Enable Google OAuth**
+
+Google sign-in is configured in InsForge, not in this repo's `.env`:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com) → APIs & Services → Credentials → Create OAuth 2.0 Client ID (Web application)
+2. Add this **Authorized redirect URI**: `<NEXT_PUBLIC_INSFORGE_URL>/auth/v1/callback`
+   - Example: `https://myapp.us-east-1.insforge.app/auth/v1/callback`
+   - For local dev add: `http://localhost:7130/auth/v1/callback` (if running InsForge locally)
+3. Copy the **Client ID** and **Client Secret** into your InsForge dashboard:
+   - InsForge Dashboard → Auth → OAuth Providers → Google → Enable → paste credentials
+
+**4. Run the dev server**
 ```bash
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+> **Troubleshooting for team members**: If the app shows a blank screen or auth fails immediately, the most common cause is missing `NEXT_PUBLIC_INSFORGE_URL` / `NEXT_PUBLIC_INSFORGE_ANON_KEY` in your `.env.local`.
 
 ---
 

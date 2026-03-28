@@ -1,6 +1,6 @@
 "use server";
 
-import { createServerClient, setAuthCookies, clearAuthCookies } from "@/lib/insforge-server";
+import { createServerClient, setAuthCookies, clearAuthCookies, getAccessToken } from "@/lib/insforge-server";
 
 export async function signUp(formData: {
   email: string;
@@ -69,5 +69,48 @@ export async function signOut() {
   await client.auth.signOut();
   await clearAuthCookies();
   return { success: true };
+}
+
+/**
+ * Exchange an OAuth authorization code for tokens and set server-side cookies.
+ * Called from the /auth/callback page after Google OAuth redirects back.
+ */
+export async function handleOAuthCallback(code: string, codeVerifier?: string) {
+  const client = createServerClient(); // no token needed — we're exchanging the code
+  const { data, error } = await client.auth.exchangeOAuthCode(code, codeVerifier);
+  if (error) return { success: false, error: error.message };
+  if (!data?.accessToken || !data?.refreshToken) {
+    return { success: false, error: "OAuth exchange failed: no tokens received." };
+  }
+  await setAuthCookies(data.accessToken, data.refreshToken);
+  return { success: true };
+}
+
+/**
+ * Server-side check: is the current request authenticated, and has the user
+ * completed onboarding? Uses httpOnly cookies so it works after both
+ * email/password login and Google OAuth.
+ */
+export async function checkOnboardingStatus(): Promise<{
+  authenticated: boolean;
+  onboardingCompleted: boolean;
+}> {
+  const accessToken = await getAccessToken();
+  if (!accessToken) return { authenticated: false, onboardingCompleted: false };
+
+  const client = createServerClient(accessToken);
+  const { data: userData, error: userError } = await client.auth.getCurrentUser();
+  if (userError || !userData?.user?.id) return { authenticated: false, onboardingCompleted: false };
+
+  const { data: profileData } = await client.database
+    .from("user_profiles")
+    .select("onboarding_completed")
+    .eq("user_id", userData.user.id)
+    .maybeSingle();
+
+  return {
+    authenticated: true,
+    onboardingCompleted: profileData?.onboarding_completed === true,
+  };
 }
 

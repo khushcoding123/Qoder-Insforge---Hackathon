@@ -68,12 +68,18 @@ function LoginPageInner() {
     const { data, error } = await insforge.auth.signInWithOAuth({
       provider: "google",
       redirectTo: `${origin}/auth/callback`,
+      skipBrowserRedirect: true, // we handle the redirect so we can store the codeVerifier
     });
     if (error || !data?.url) {
       setError("Google sign-in is unavailable.");
       setOauthLoading(false);
+      return;
     }
-    // SDK auto-redirects when skipBrowserRedirect is not set
+    // Store PKCE code verifier so the callback page can exchange it server-side
+    if (data.codeVerifier) {
+      sessionStorage.setItem("insforge_oauth_verifier", data.codeVerifier);
+    }
+    window.location.href = data.url;
   }
 
   return (

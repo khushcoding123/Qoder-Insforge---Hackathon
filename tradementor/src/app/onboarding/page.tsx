@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  TrendingUp, ChevronRight, ChevronLeft, Loader2,
+  TrendingUp, ChevronRight, ChevronLeft, Loader2, AlertCircle,
   BookOpen, Brain, Target, Clock, BarChart2, Shield,
   Activity, Layers, Zap,
 } from "lucide-react";
@@ -100,6 +100,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>(1);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string>("");
 
   const [experience, setExperience] = useState<string>("");
   const [familiarity, setFamiliarity] = useState<string[]>([]);
@@ -128,6 +129,7 @@ export default function OnboardingPage() {
   async function handleFinish() {
     if (!canAdvance()) return;
     setSaving(true);
+    setSaveError("");
     const profile: OnboardingProfile = {
       experience: experience as OnboardingProfile["experience"],
       familiarity,
@@ -135,9 +137,14 @@ export default function OnboardingPage() {
       goal: goal as OnboardingProfile["goal"],
       timeCommitment: timeCommitment as OnboardingProfile["timeCommitment"],
     };
-    await saveOnboardingProfile(profile);
-    setSaving(false);
-    router.push("/learn");
+    const result = await saveOnboardingProfile(profile);
+    if (!result.success) {
+      setSaving(false);
+      setSaveError(result.error ?? "Failed to save your profile. Please try again.");
+      return;
+    }
+    // Use replace so the back button doesn't return to onboarding
+    router.replace("/dashboard");
   }
 
   const stepTitles = [
@@ -241,6 +248,14 @@ export default function OnboardingPage() {
             </div>
           </motion.div>
         </AnimatePresence>
+
+        {/* Save error */}
+        {saveError && (
+          <div className="flex items-center gap-2 text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-3 mt-4">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            {saveError}
+          </div>
+        )}
 
         {/* Navigation */}
         <div className="flex gap-3 mt-6">

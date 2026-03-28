@@ -36,7 +36,16 @@
       "Bash(npx @insforge/cli db query \"ALTER TABLE user_learn_progress ENABLE ROW LEVEL SECURITY\")",
       "Bash(npx @insforge/cli db query \"CREATE POLICY \"\"users_own_progress\"\" ON user_learn_progress FOR ALL USING \\(user_id = auth.uid\\(\\)\\) WITH CHECK \\(user_id = auth.uid\\(\\)\\)\")",
       "Bash(find '/c/Users/khush/OneDrive - Lake Washington School District/Hackathon-Insforge/Qoder-Insforge---Hackathon/tradementor/node_modules/@insforge/sdk' -name *.d.ts)",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(taskkill:*)",
+      "Bash(cmd /c \"taskkill /PID 42584 /F\")",
+      "Bash(cmd /c taskkill /PID 42584 /F)",
+      "Bash(cmd /c \"netstat -ano | findstr :3000\")",
+      "Bash(echo \"exit: $?\")",
+      "Bash(cmd /c \"netstat -ano | findstr :3000 > C:\\\\Users\\\\khush\\\\AppData\\\\Local\\\\Temp\\\\ports.txt 2>&1\")",
+      "Read(//c/Users/khush/AppData/Local/Temp/**)",
+      "Bash(powershell -Command \"Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | Select-Object LocalPort,OwningProcess\")",
+      "Bash(powershell -Command \"Stop-Process -Id 42584 -Force; Start-Sleep -Seconds 1; Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | Select-Object LocalPort,OwningProcess\")"
     ]
   }
 }
