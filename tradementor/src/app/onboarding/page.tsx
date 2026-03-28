@@ -164,18 +164,28 @@ export default function OnboardingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] flex flex-col items-center justify-center px-4 py-8 grid-bg">
-      {/* Logo */}
-      <Link href="/" className="flex items-center gap-2 mb-10">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center shadow-[0_0_15px_rgba(0,229,255,0.4)]">
-          <TrendingUp className="w-4 h-4 text-white" />
+    <div className="auth-shell grid-bg">
+      <Link href="/" className="site-logo-lockup absolute left-1/2 top-10 -translate-x-1/2">
+        <div className="site-logo-mark">
+          <TrendingUp className="h-5 w-5 text-white" />
         </div>
-        <span className="font-bold text-white text-lg">TradeMentor <span className="text-cyan-400">AI</span></span>
+        <span className="text-xl font-bold tracking-tight text-white">
+          TradeMentor <span className="text-cyan-400">AI</span>
+        </span>
       </Link>
 
-      <div className="w-full max-w-lg">
-        {/* Progress bar */}
-        <div className="flex items-center gap-2 mb-8">
+      <div className="w-full max-w-xl pt-20">
+        <div className="mb-6 text-center">
+          <p className="page-kicker mx-auto">Personalized setup</p>
+          <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white">
+            Let&apos;s tailor your learning path
+          </h1>
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-zinc-400">
+            This takes about a minute and helps shape your lessons, practice prompts, and coaching style around where you are right now.
+          </p>
+        </div>
+
+        <div className="mb-8 flex items-center gap-2">
           {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
             <div
               key={i}
@@ -185,7 +195,7 @@ export default function OnboardingPage() {
             />
           ))}
         </div>
-        <p className="text-gray-500 text-xs text-center mb-6">Step {step} of {TOTAL_STEPS}</p>
+        <p className="mb-6 text-center text-xs tracking-[0.16em] text-zinc-500 uppercase">Step {step} of {TOTAL_STEPS}</p>
 
         <AnimatePresence mode="wait">
           <motion.div
@@ -195,7 +205,7 @@ export default function OnboardingPage() {
             exit={{ opacity: 0, x: -30 }}
             transition={{ duration: 0.25 }}
           >
-            <div className="bg-[#0F0F1A] border border-white/10 rounded-2xl p-8">
+            <div className="premium-panel p-8">
               <h1 className="text-2xl font-bold text-white mb-1">{stepTitles[step - 1]}</h1>
               <p className="text-gray-400 text-sm mb-6">{stepSubtitles[step - 1]}</p>
 
@@ -251,7 +261,7 @@ export default function OnboardingPage() {
 
         {/* Save error */}
         {saveError && (
-          <div className="flex items-center gap-2 text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-3 mt-4">
+          <div className="mt-4 flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-400">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             {saveError}
           </div>

@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
-  Target,
   ArrowRight,
   ArrowLeft,
   Brain,
@@ -21,6 +20,7 @@ import { Footer } from "@/components/layout/Footer";
 import { GlowCard } from "@/components/ui/GlowCard";
 import { Badge } from "@/components/ui/Badge";
 import { StreamingTextFormatted } from "@/components/ui/StreamingText";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { exampleStrategies } from "@/lib/data/strategies";
 
 interface Message {
@@ -98,7 +98,6 @@ export default function StrategyPage() {
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
-  const [blueprintContent, setBlueprintContent] = useState("");
   const [showExamples, setShowExamples] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -133,9 +132,6 @@ export default function StrategyPage() {
       setMessages([...newMessages, { role: "assistant", content: fullContent }]);
       setStreamingContent("");
 
-      if (step === 4) {
-        setBlueprintContent(fullContent);
-      }
     } catch {
       setMessages([...newMessages, { role: "assistant", content: "Connection error. Please check your API key." }]);
       setStreamingContent("");
@@ -174,20 +170,16 @@ Please analyze these inputs, ask me clarifying questions to understand my goals 
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] flex flex-col">
+    <div className="page-shell">
       <Navbar />
 
-      <main className="flex-1 pt-20 pb-12 px-4">
-        <div className="max-w-7xl mx-auto">
-
-          {/* Header */}
-          <div className="py-6">
-            <h1 className="text-3xl font-bold text-white mb-1 flex items-center gap-3">
-              <Target className="w-7 h-7 text-purple-400" />
-              Strategy Builder
-            </h1>
-            <p className="text-gray-400">Build your own trading strategy with AI guidance — no copy-paste, no shortcuts.</p>
-          </div>
+      <main className="page-main">
+        <div className="page-container">
+          <PageHeader
+            kicker="Guided workflow"
+            title="Strategy Builder"
+            description="Build a trading blueprint with structured inputs, guided AI analysis, and a final strategy document that reflects your own logic rather than copied signals."
+          />
 
           {/* Step Progress */}
           <div className="mb-8">

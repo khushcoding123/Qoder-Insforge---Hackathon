@@ -73,7 +73,7 @@ function LessonContent({ content }: { content: string }) {
     i++;
   }
 
-  return <div className="space-y-1">{elements}</div>;
+  return <div className="lesson-content space-y-1">{elements}</div>;
 }
 
 async function streamAIResponse(
@@ -130,9 +130,9 @@ export default function LessonPage() {
 
   if (!lesson) {
     return (
-      <div className="min-h-screen bg-[#0A0A0F] flex flex-col">
+      <div className="page-shell">
         <Navbar />
-        <main className="flex-1 pt-24 flex items-center justify-center">
+        <main className="page-main flex items-center justify-center">
           <div className="text-center">
             <p className="text-gray-400 text-lg mb-4">Lesson not found</p>
             <Link href="/learn" className="text-cyan-400 hover:underline">
@@ -186,20 +186,20 @@ export default function LessonPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] flex flex-col">
+    <div className="page-shell">
       <Navbar />
 
-      <main className="flex-1 pt-20 pb-12 px-4">
-        <div className="max-w-7xl mx-auto">
+      <main className="page-main">
+        <div className="page-container">
 
           {/* Back link */}
           <div className="py-4">
             <Link
               href="/learn"
-              className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
+              className="inline-flex items-center gap-2 text-sm text-zinc-400 transition-colors hover:text-white"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back to Learn Center
+              Back to AI Learn
             </Link>
           </div>
 
@@ -255,7 +255,7 @@ export default function LessonPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
               >
-                <GlowCard className="p-8" glowColor="none">
+                <GlowCard className="p-8 lg:p-10" glowColor="none">
                   <LessonContent content={lesson.content} />
                 </GlowCard>
               </motion.div>

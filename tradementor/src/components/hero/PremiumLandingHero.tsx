@@ -67,26 +67,27 @@ export function PremiumLandingHero() {
       <div className="relative z-20 mx-auto flex min-h-[100dvh] max-w-5xl items-center justify-center px-6 pb-20 pt-28 text-center sm:px-8 lg:pt-36">
         <div className="pointer-events-auto w-full">
           <MotionWrap delay={0} y={16} duration={0.55}>
-            <p className="mx-auto inline-flex rounded-full border border-cyan-300/20 bg-white/5 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.2em] text-cyan-200/80 backdrop-blur-md">
+            <p className="page-kicker mx-auto">
               TradeMentor AI
             </p>
           </MotionWrap>
 
           <MotionWrap delay={0.06} y={14} duration={0.6}>
-            <h1 className="mx-auto mt-6 max-w-4xl text-balance text-[2.5rem] font-semibold leading-[1.02] tracking-[-0.04em] text-white sm:text-[3.1rem] lg:text-[4.2rem]">
+            <h1 className="mx-auto mt-6 max-w-4xl text-[2.7rem] font-semibold leading-[0.98] tracking-[-0.05em] text-white sm:text-[3.5rem] lg:text-[4.6rem]">
               <PremiumTypeCycle
+                className="mx-auto"
                 phrases={[
-                  "Learn to Trade With Confidence",
-                  "Turn Market Noise Into Clear Decisions",
-                  "Master Trading, One Edge at a Time",
+                  "Learn to Trade\nWith Confidence",
+                  "Turn Market Noise\nInto Clear Decisions",
+                  "Master Trading,\nOne Edge at a Time",
                 ]}
               />
             </h1>
           </MotionWrap>
 
           <MotionWrap delay={0.13} y={10} duration={0.5}>
-            <p className="mx-auto mt-6 max-w-2xl text-[15px] leading-relaxed text-zinc-300 sm:text-[17px]">
-              Build skill through structured lessons, AI-guided coaching, and deliberate practice that compounds over time.
+            <p className="mx-auto mt-6 max-w-2xl text-[15px] leading-8 text-zinc-300 sm:text-[17px]">
+              Build trading skill through structured lessons, AI-guided coaching, and deliberate practice designed to sharpen process, discipline, and decision quality.
             </p>
           </MotionWrap>
 
